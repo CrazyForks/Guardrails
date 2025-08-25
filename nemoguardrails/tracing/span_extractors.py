@@ -28,6 +28,7 @@ from nemoguardrails.tracing.constants import (
     SpanTypes,
     SystemConstants,
 )
+from nemoguardrails.tracing.span_format import SpanFormat, validate_span_format
 from nemoguardrails.tracing.spans import (
     ActionSpan,
     InteractionSpan,
@@ -45,9 +46,7 @@ class SpanExtractor(ABC):
     """Base class for span extractors."""
 
     @abstractmethod
-    def extract_spans(
-        self, activated_rails: List[ActivatedRail]
-    ) -> List[Union[SpanLegacy, SpanOpentelemetry]]:
+    def extract_spans(self, activated_rails: List[ActivatedRail]) -> List[Union[SpanLegacy, SpanOpentelemetry]]:
         """Extract spans from activated rails."""
         ...
 
@@ -55,9 +54,7 @@ class SpanExtractor(ABC):
 class SpanExtractorV1(SpanExtractor):
     """Extract v1 spans (legacy format)."""
 
-    def extract_spans(
-        self, activated_rails: List[ActivatedRail]
-    ) -> List[Union[SpanLegacy, SpanOpentelemetry]]:
+    def extract_spans(self, activated_rails: List[ActivatedRail]) -> List[Union[SpanLegacy, SpanOpentelemetry]]:
         """Extract v1 spans from activated rails."""
         spans: List[SpanLegacy] = []
         if not activated_rails:
@@ -71,8 +68,7 @@ class SpanExtractorV1(SpanExtractor):
             name=SpanTypes.INTERACTION,  # V1 uses legacy naming
             start_time=(activated_rails[0].started_at or 0.0) - ref_time,
             end_time=(activated_rails[-1].finished_at or 0.0) - ref_time,
-            duration=(activated_rails[-1].finished_at or 0.0)
-            - (activated_rails[0].started_at or 0.0),
+            duration=(activated_rails[-1].finished_at or 0.0) - (activated_rails[0].started_at or 0.0),
         )
 
         interaction_span.metrics.update(
@@ -133,14 +129,10 @@ class SpanExtractorV1(SpanExtractor):
                         {
                             f"{base_metric_name}_total": 1,
                             f"{base_metric_name}_seconds_avg": llm_call.duration or 0.0,
-                            f"{base_metric_name}_seconds_total": llm_call.duration
-                            or 0.0,
-                            f"{base_metric_name}_prompt_tokens_total": llm_call.prompt_tokens
-                            or 0,
-                            f"{base_metric_name}_completion_tokens_total": llm_call.completion_tokens
-                            or 0,
-                            f"{base_metric_name}_tokens_total": llm_call.total_tokens
-                            or 0,
+                            f"{base_metric_name}_seconds_total": llm_call.duration or 0.0,
+                            f"{base_metric_name}_prompt_tokens_total": llm_call.prompt_tokens or 0,
+                            f"{base_metric_name}_completion_tokens_total": llm_call.completion_tokens or 0,
+                            f"{base_metric_name}_tokens_total": llm_call.total_tokens or 0,
                         }
                     )
                     spans.append(llm_span)
@@ -151,9 +143,7 @@ class SpanExtractorV1(SpanExtractor):
 class SpanExtractorV2(SpanExtractor):
     """Extract v2 spans with OpenTelemetry semantic conventions."""
 
-    def __init__(
-        self, events: Optional[List[dict]] = None, enable_content_capture: bool = False
-    ):
+    def __init__(self, events: Optional[List[dict]] = None, enable_content_capture: bool = False):
         """Initialize with optional events for extracting user/bot messages.
 
         Args:
@@ -175,8 +165,7 @@ class SpanExtractorV2(SpanExtractor):
             name=SpanNames.GUARDRAILS_REQUEST,
             start_time=(activated_rails[0].started_at or 0.0) - ref_time,
             end_time=(activated_rails[-1].finished_at or 0.0) - ref_time,
-            duration=(activated_rails[-1].finished_at or 0.0)
-            - (activated_rails[0].started_at or 0.0),
+            duration=(activated_rails[-1].finished_at or 0.0) - (activated_rails[0].started_at or 0.0),
             operation_name=OperationNames.GUARDRAILS,
             service_name=SystemConstants.SYSTEM_NAME,
         )
@@ -193,12 +182,8 @@ class SpanExtractorV2(SpanExtractor):
                 duration=activated_rail.duration or 0.0,
                 rail_type=activated_rail.type,
                 rail_name=activated_rail.name,
-                rail_stop=(
-                    activated_rail.stop if activated_rail.stop is not None else None
-                ),
-                rail_decisions=(
-                    activated_rail.decisions if activated_rail.decisions else None
-                ),
+                rail_stop=(activated_rail.stop if activated_rail.stop is not None else None),
+                rail_decisions=(activated_rail.decisions if activated_rail.decisions else None),
             )
             spans.append(rail_span)
 
@@ -215,30 +200,18 @@ class SpanExtractorV2(SpanExtractor):
                     has_llm_calls=len(action.llm_calls) > 0,
                     llm_calls_count=len(action.llm_calls),
                     action_params={
-                        k: v
-                        for k, v in (action.action_params or {}).items()
-                        if isinstance(v, (str, int, float, bool))
+                        k: v for k, v in (action.action_params or {}).items() if isinstance(v, (str, int, float, bool))
                     },
                     error=True if hasattr(action, "error") and action.error else None,
-                    error_type=(
-                        type(action.error).__name__
-                        if hasattr(action, "error") and action.error
-                        else None
-                    ),
-                    error_message=(
-                        str(action.error)
-                        if hasattr(action, "error") and action.error
-                        else None
-                    ),
+                    error_type=(type(action.error).__name__ if hasattr(action, "error") and action.error else None),
+                    error_message=(str(action.error) if hasattr(action, "error") and action.error else None),
                 )
                 spans.append(action_span)
 
                 for llm_call in action.llm_calls:
                     model_name = llm_call.llm_model_name or SystemConstants.UNKNOWN
 
-                    provider_name = (
-                        llm_call.llm_provider_name or SystemConstants.UNKNOWN
-                    )
+                    provider_name = llm_call.llm_provider_name or SystemConstants.UNKNOWN
 
                     # use the specific task name as operation name (custom operation)
                     # this provides better observability for NeMo Guardrails specific tasks
@@ -256,9 +229,7 @@ class SpanExtractorV2(SpanExtractor):
 
                     if llm_call.raw_response:
                         response_id = llm_call.raw_response.get("id")
-                        finish_reasons = self._extract_finish_reasons(
-                            llm_call.raw_response
-                        )
+                        finish_reasons = self._extract_finish_reasons(llm_call.raw_response)
                         temperature = llm_call.raw_response.get("temperature")
                         max_tokens = llm_call.raw_response.get("max_tokens")
                         top_p = llm_call.raw_response.get("top_p")
@@ -331,9 +302,7 @@ class SpanExtractorV2(SpanExtractor):
 
         if llm_call.completion:
             # per OTel spec: content should NOT be captured by default
-            body = (
-                {"content": llm_call.completion} if self.enable_content_capture else {}
-            )
+            body = {"content": llm_call.completion} if self.enable_content_capture else {}
             events.append(
                 SpanEvent(
                     name=EventNames.GEN_AI_CONTENT_COMPLETION,
@@ -445,9 +414,6 @@ class SpanExtractorV2(SpanExtractor):
             finish_reasons = ["stop"]
 
         return finish_reasons if finish_reasons else None
-
-
-from nemoguardrails.tracing.span_format import SpanFormat, validate_span_format
 
 
 def create_span_extractor(

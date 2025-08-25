@@ -19,7 +19,6 @@ from typing import List, Tuple, Union
 import pytest
 
 from nemoguardrails.llm.filters import (
-    ReasoningExtractionResult,
     extract_and_strip_trace,
     find_reasoning_tokens_position,
     first_turns,
@@ -310,9 +309,7 @@ def test_find_token_positions_for_removal(response, start_token, end_token, expe
         ),
     ],
 )
-def test_extract_and_strip_trace(
-    response, start_token, end_token, expected_text, expected_trace
-):
+def test_extract_and_strip_trace(response, start_token, end_token, expected_text, expected_trace):
     """Tests the extraction and stripping of reasoning traces."""
     result = extract_and_strip_trace(response, start_token, end_token)
     assert result.text == expected_text
@@ -379,11 +376,7 @@ class TestUserAssistantSequence:
 
         result = user_assistant_sequence(events)
 
-        assert result == (
-            "User: Hello, how are you?\n"
-            "Assistant: I'm doing well, thank you!\n"
-            "User: Great to hear."
-        )
+        assert result == ("User: Hello, how are you?\nAssistant: I'm doing well, thank you!\nUser: Great to hear.")
 
     def test_user_assistant_sequence_with_multimodal_content(self):
         """Test user_assistant_sequence with multimodal content."""
@@ -402,10 +395,7 @@ class TestUserAssistantSequence:
 
         result = user_assistant_sequence(events)
 
-        assert result == (
-            "User: What's in this image? [+ image]\n"
-            "Assistant: I see a cat in the image."
-        )
+        assert result == ("User: What's in this image? [+ image]\nAssistant: I see a cat in the image.")
 
     def test_user_assistant_sequence_with_empty_events(self):
         """Test user_assistant_sequence with empty events."""
@@ -431,10 +421,7 @@ class TestUserAssistantSequence:
 
         result = user_assistant_sequence(events)
 
-        assert result == (
-            "User: Hello! What's in this image? [+ image]\n"
-            "Assistant: I see a cat in the image."
-        )
+        assert result == ("User: Hello! What's in this image? [+ image]\nAssistant: I see a cat in the image.")
 
     def test_user_assistant_sequence_with_image_only(self):
         """Test user_assistant_sequence with image only."""

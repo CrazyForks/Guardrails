@@ -21,7 +21,6 @@ from unittest import mock
 
 import pytest
 
-from nemoguardrails import RailsConfig
 from nemoguardrails.llm.prompts import TaskPrompt
 from nemoguardrails.rails.llm.config import Model, RailsConfig
 
@@ -34,9 +33,7 @@ TEST_API_KEY_VALUE = "sk-svcacct-abcdefGHIJKlmnoPQRSTuvXYZ1234567890"
         [
             TaskPrompt(task="self_check_input", output_parser=None, content="..."),
             TaskPrompt(task="self_check_facts", output_parser="parser1", content="..."),
-            TaskPrompt(
-                task="self_check_output", output_parser="parser2", content="..."
-            ),
+            TaskPrompt(task="self_check_output", output_parser="parser2", content="..."),
         ],
         [
             {"task": "self_check_input", "output_parser": None},
@@ -56,10 +53,7 @@ def test_check_output_parser_exists(caplog, prompts):
     result = RailsConfig.check_output_parser_exists(values)
 
     assert result == values
-    assert (
-        "Deprecation Warning: Output parser is not registered for the task."
-        in caplog.text
-    )
+    assert "Deprecation Warning: Output parser is not registered for the task." in caplog.text
     assert "self_check_input" in caplog.text
 
 
@@ -92,9 +86,7 @@ def test_check_prompt_exist_for_self_check_rails():
             # missings self_check_output prompt
         ],
     }
-    with pytest.raises(
-        ValueError, match="You must provide a `self_check_output` prompt template"
-    ):
+    with pytest.raises(ValueError, match="You must provide a `self_check_output` prompt template"):
         RailsConfig.check_prompt_exist_for_self_check_rails(values)
 
 
@@ -275,7 +267,7 @@ def test_model_api_key_value_multiple_strings_one_missing():
     """Check if we have multiple models and one references an invalid api_key_env_var we throw error"""
     with pytest.raises(
         ValueError,
-        match=f"Model API Key environment variable 'DUMMY_NVIDIA_API_KEY' not set.",
+        match="Model API Key environment variable 'DUMMY_NVIDIA_API_KEY' not set.",
     ):
         _ = RailsConfig(
             models=[
@@ -295,14 +287,12 @@ def test_model_api_key_value_multiple_strings_one_missing():
         )
 
 
-@mock.patch.dict(
-    os.environ, {TEST_API_KEY_NAME: TEST_API_KEY_VALUE, "DUMMY_NVIDIA_API_KEY": ""}
-)
+@mock.patch.dict(os.environ, {TEST_API_KEY_NAME: TEST_API_KEY_VALUE, "DUMMY_NVIDIA_API_KEY": ""})
 def test_model_api_key_value_multiple_strings_one_empty():
     """Check if we have multiple models and one references an invalid api_key_env_var we throw error"""
     with pytest.raises(
         ValueError,
-        match=f"Model API Key environment variable 'DUMMY_NVIDIA_API_KEY' not set.",
+        match="Model API Key environment variable 'DUMMY_NVIDIA_API_KEY' not set.",
     ):
         _ = RailsConfig(
             models=[

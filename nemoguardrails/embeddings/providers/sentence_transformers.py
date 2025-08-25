@@ -16,6 +16,8 @@
 import asyncio
 from typing import List
 
+from nemoguardrails.imports import optional_import
+
 from .base import EmbeddingModel
 
 
@@ -42,20 +44,10 @@ class SentenceTransformerEmbeddingModel(EmbeddingModel):
     engine_name = "SentenceTransformers"
 
     def __init__(self, embedding_model: str, **kwargs):
-        try:
-            from sentence_transformers import SentenceTransformer
-        except ImportError:
-            raise ImportError(
-                "Could not import sentence-transformers, please install it with "
-                "`pip install sentence-transformers`."
-            )
-
-        try:
-            from torch import cuda
-        except ImportError:
-            raise ImportError(
-                "Could not import torch, please install it with `pip install torch`."
-            )
+        SentenceTransformer = optional_import(
+            "sentence_transformers.SentenceTransformer", package_name="sentence-transformers", error="raise"
+        )
+        cuda = optional_import("torch.cuda", package_name="torch", error="raise")
 
         device = "cuda" if cuda.is_available() else "cpu"
         self.model = SentenceTransformer(embedding_model, device=device, **kwargs)
@@ -73,9 +65,7 @@ class SentenceTransformerEmbeddingModel(EmbeddingModel):
         """
 
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            get_executor(), self.model.encode, documents
-        )
+        result = await loop.run_in_executor(get_executor(), self.model.encode, documents)
 
         return result.tolist()
 

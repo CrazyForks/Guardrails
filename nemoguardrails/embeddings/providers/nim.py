@@ -15,6 +15,8 @@
 
 from typing import List
 
+from nemoguardrails.imports import optional_import
+
 from .base import EmbeddingModel
 
 
@@ -34,17 +36,14 @@ class NIMEmbeddingModel(EmbeddingModel):
     engine_name = "nim"
 
     def __init__(self, embedding_model: str, **kwargs):
-        try:
-            from langchain_nvidia_ai_endpoints import NVIDIAEmbeddings
+        NVIDIAEmbeddings = optional_import(
+            "langchain_nvidia_ai_endpoints.NVIDIAEmbeddings",
+            package_name="langchain-nvidia-ai-endpoints",
+            error="raise",
+        )
 
-            self.model = embedding_model
-            self.document_embedder = NVIDIAEmbeddings(model=embedding_model, **kwargs)
-
-        except ImportError:
-            raise ImportError(
-                "Could not import langchain_nvidia_ai_endpoints, please install it with "
-                "`pip install langchain-nvidia-ai-endpoints`."
-            )
+        self.model = embedding_model
+        self.document_embedder = NVIDIAEmbeddings(model=embedding_model, **kwargs)
 
     async def encode_async(self, documents: List[str]) -> List[List[float]]:
         """Encode a list of documents into their corresponding sentence embeddings.

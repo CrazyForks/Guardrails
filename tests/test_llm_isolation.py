@@ -15,7 +15,6 @@
 
 """Tests for LLM isolation functionality in LLMRails."""
 
-import inspect
 from typing import Optional
 from unittest.mock import Mock, patch
 
@@ -182,9 +181,7 @@ class TestLLMIsolation:
         for action_name, action_info in action_dispatcher.registered_actions.items():
             result = rails._get_action_function(action_info)
             assert callable(result), f"Action {action_name} should return callable"
-            assert (
-                result is action_info
-            ), f"Should return the action_info directly for {action_name}"
+            assert result is action_info, f"Should return the action_info directly for {action_name}"
 
     def test_create_action_llm_copy(self, rails_with_mock_llm):
         """Test creation of isolated LLM copies."""
@@ -240,10 +237,7 @@ class TestLLMIsolation:
 
             error_msg = str(exc_info.value)
             # verify error message contains key information
-            assert (
-                "Failed to create isolated LLM instance for action 'test_action'"
-                in error_msg
-            )
+            assert "Failed to create isolated LLM instance for action 'test_action'" in error_msg
             assert "parameter contamination" in error_msg
             assert "Possible solutions:" in error_msg
             assert "custom LLM class" in error_msg
@@ -288,16 +282,12 @@ class TestLLMIsolation:
             "self_check_output_llm",
         ]
 
-        registered_llm_params = [
-            call[0][0] for call in rails.runtime.register_action_param.call_args_list
-        ]
+        registered_llm_params = [call[0][0] for call in rails.runtime.register_action_param.call_args_list]
 
         for expected_param in expected_llm_params:
             assert expected_param in registered_llm_params
 
-    def test_create_isolated_llms_skips_existing_specialized_llms(
-        self, rails_with_mock_llm
-    ):
+    def test_create_isolated_llms_skips_existing_specialized_llms(self, rails_with_mock_llm):
         """Test that existing specialized LLMs are not overridden."""
         rails = rails_with_mock_llm
 
@@ -331,9 +321,7 @@ class TestLLMIsolation:
         ):
             rails._create_isolated_llms_for_actions()
 
-        registered_llm_params = [
-            call[0][0] for call in rails.runtime.register_action_param.call_args_list
-        ]
+        registered_llm_params = [call[0][0] for call in rails.runtime.register_action_param.call_args_list]
 
         assert "self_check_output_llm" not in registered_llm_params
         assert "action_with_llm_llm" in registered_llm_params
@@ -355,9 +343,7 @@ class TestLLMIsolation:
         # verify no llms were registered
         rails.runtime.register_action_param.assert_not_called()
 
-    def test_create_isolated_llms_handles_missing_action_dispatcher(
-        self, rails_with_mock_llm
-    ):
+    def test_create_isolated_llms_handles_missing_action_dispatcher(self, rails_with_mock_llm):
         """Test graceful handling when action dispatcher is not available."""
         rails = rails_with_mock_llm
 
@@ -436,9 +422,7 @@ class TestLLMIsolationEdgeCases:
             ("non_existent_action", False),
         ],
     )
-    def test_action_detection_parametrized(
-        self, rails_with_mock_llm, action_name, expected_isolated
-    ):
+    def test_action_detection_parametrized(self, rails_with_mock_llm, action_name, expected_isolated):
         """Test action detection with various action names."""
         rails = rails_with_mock_llm
 
@@ -453,9 +437,7 @@ class TestLLMIsolationEdgeCases:
         else:
             assert action_name not in actions_needing_llms
 
-    def test_create_isolated_llms_for_configured_actions_only(
-        self, rails_with_mock_llm
-    ):
+    def test_create_isolated_llms_for_configured_actions_only(self, rails_with_mock_llm):
         """Test that isolated LLMs are created only for actions configured in rails flows."""
         rails = rails_with_mock_llm
 
@@ -490,9 +472,7 @@ class TestLLMIsolationEdgeCases:
         ):
             rails._create_isolated_llms_for_actions()
 
-        registered_llm_params = [
-            call[0][0] for call in rails.runtime.register_action_param.call_args_list
-        ]
+        registered_llm_params = [call[0][0] for call in rails.runtime.register_action_param.call_args_list]
 
         expected_isolated_llm_params = [
             "action_with_llm_llm",
@@ -501,9 +481,9 @@ class TestLLMIsolationEdgeCases:
         ]
 
         for expected_param in expected_isolated_llm_params:
-            assert (
-                expected_param in registered_llm_params
-            ), f"Expected {expected_param} to be registered as action param"
+            assert expected_param in registered_llm_params, (
+                f"Expected {expected_param} to be registered as action param"
+            )
 
         assert "action_without_llm_llm" not in registered_llm_params
         assert "non_configured_action_llm" not in registered_llm_params
@@ -528,9 +508,7 @@ class TestLLMIsolationEdgeCases:
         rails.runtime.registered_action_params = {}
         rails.runtime.register_action_param = Mock()
 
-        with patch(
-            "nemoguardrails.rails.llm.llmrails.get_action_details_from_flow_id"
-        ) as mock_get_action:
+        with patch("nemoguardrails.rails.llm.llmrails.get_action_details_from_flow_id") as mock_get_action:
             rails._create_isolated_llms_for_actions()
 
         mock_get_action.assert_not_called()
@@ -553,12 +531,8 @@ class TestLLMIsolationEdgeCases:
         rails.config.rails = Mock()
         rails.config.rails.input = Mock()
         rails.config.rails.output = Mock()
-        rails.config.rails.input.flows = [
-            "content safety check input $model=content_safety"
-        ]
-        rails.config.rails.output.flows = [
-            "content safety check output $model=content_safety"
-        ]
+        rails.config.rails.input.flows = ["content safety check input $model=content_safety"]
+        rails.config.rails.output.flows = ["content safety check output $model=content_safety"]
         rails.config.flows = []  # Empty flows list (timing issue scenario)
 
         rails.runtime = Mock()
@@ -570,10 +544,7 @@ class TestLLMIsolationEdgeCases:
         # after the fix, it should handle empty flows gracefully without the warning
         rails._create_isolated_llms_for_actions()
 
-        warning_messages = [
-            record.message for record in caplog.records if record.levelname == "WARNING"
-        ]
-        assert not any(
-            "Failed to create isolated LLMs for actions" in msg
-            for msg in warning_messages
-        ), f"Fix failed: Warning still logged: {warning_messages}"
+        warning_messages = [record.message for record in caplog.records if record.levelname == "WARNING"]
+        assert not any("Failed to create isolated LLMs for actions" in msg for msg in warning_messages), (
+            f"Fix failed: Warning still logged: {warning_messages}"
+        )

@@ -16,14 +16,10 @@
 import logging
 from typing import Optional
 
-try:
-    from google.cloud import language_v2
-except ImportError:
-    # The exception about installing google-cloud-language will be on the first call to the moderation api
-    pass
-
-
 from nemoguardrails.actions import action
+from nemoguardrails.imports import optional_import
+
+language_v2 = optional_import("google.cloud.language_v2", package_name="google-cloud-language", error="ignore")
 
 log = logging.getLogger(__name__)
 
@@ -103,9 +99,7 @@ def gcp_text_moderation_mapping(result: dict) -> bool:
     is_system_action=True,
     output_mapping=gcp_text_moderation_mapping,
 )
-async def call_gcp_text_moderation_api(
-    context: Optional[dict] = None, **kwargs
-) -> dict:
+async def call_gcp_text_moderation_api(context: Optional[dict] = None, **kwargs) -> dict:
     """
     Application Default Credentials (ADC) is a strategy used by the GCP authentication libraries to automatically
     find credentials based on the application environment. ADC searches for credentials in the following locations (Search order):
@@ -120,8 +114,7 @@ async def call_gcp_text_moderation_api(
 
     except ImportError:
         raise ImportError(
-            "Could not import google.cloud.language_v2, please install it with "
-            "`pip install google-cloud-language`."
+            "Could not import google.cloud.language_v2, please install it with `pip install google-cloud-language`."
         )
 
     user_message = context.get("user_message")

@@ -16,6 +16,8 @@ import asyncio
 from contextvars import ContextVar
 from typing import List
 
+from nemoguardrails.imports import optional_import
+
 from .base import EmbeddingModel
 
 # We set the OpenAI async client in an asyncio context variable because we need it
@@ -45,18 +47,12 @@ class OpenAIEmbeddingModel(EmbeddingModel):
         embedding_model: str,
         **kwargs,
     ):
-        try:
-            import openai
-            from openai import AsyncOpenAI, OpenAI
-        except ImportError:
-            raise ImportError(
-                "Could not import openai, please install it with "
-                "`pip install openai`."
-            )
+        openai = optional_import("openai", error="raise")
+        OpenAI = optional_import("openai.OpenAI", error="raise")
+
         if openai.__version__ < "1.0.0":
             raise RuntimeError(
-                "`openai<1.0.0` is no longer supported. "
-                "Please upgrade using `pip install openai>=1.0.0`."
+                "`openai<1.0.0` is no longer supported. Please upgrade using `pip install openai>=1.0.0`."
             )
 
         self.model = embedding_model

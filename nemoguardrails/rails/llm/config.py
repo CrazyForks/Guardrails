@@ -31,7 +31,6 @@ from pydantic import (
     root_validator,
     validator,
 )
-from pydantic.fields import Field
 
 from nemoguardrails import utils
 from nemoguardrails.colang import parse_colang_file, parse_flow_elements
@@ -51,9 +50,7 @@ with open(os.path.join(os.path.dirname(__file__), "default_config_v2.yml")) as _
 
 # Extract the COLANGPATH directories.
 colang_path_dirs = [
-    _path.strip()
-    for _path in os.environ.get("COLANGPATH", "").split(os.pathsep)
-    if _path.strip() != ""
+    _path.strip() for _path in os.environ.get("COLANGPATH", "").split(os.pathsep) if _path.strip() != ""
 ]
 
 # We also make sure that the standard library is in the COLANGPATH.
@@ -62,9 +59,7 @@ standard_library_path = os.path.normpath(
 )
 
 # nemoguardrails/library
-guardrails_stdlib_path = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
+guardrails_stdlib_path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 colang_path_dirs.append(standard_library_path)
 colang_path_dirs.append(guardrails_stdlib_path)
 
@@ -145,10 +140,7 @@ class Model(BaseModel):
                 )
             if not model_field and model_from_params:
                 data["model"] = model_from_params
-                if (
-                    "model_name" in parameters
-                    and parameters["model_name"] == model_from_params
-                ):
+                if "model_name" in parameters and parameters["model_name"] == model_from_params:
                     parameters.pop("model_name")
                 elif "model" in parameters and parameters["model"] == model_from_params:
                     parameters.pop("model")
@@ -296,9 +288,7 @@ class FiddlerGuardrails(BaseModel):
 class MessageTemplate(BaseModel):
     """Template for a message structure."""
 
-    type: str = Field(
-        description="The type of message, e.g., 'assistant', 'user', 'system'."
-    )
+    type: str = Field(description="The type of message, e.g., 'assistant', 'user', 'system'.")
     content: str = Field(description="The content of the message.")
 
 
@@ -306,9 +296,7 @@ class TaskPrompt(BaseModel):
     """Configuration for prompts that will be used for a specific task."""
 
     task: str = Field(description="The id of the task associated with this prompt.")
-    content: Optional[str] = Field(
-        default=None, description="The content of the prompt, if it's a string."
-    )
+    content: Optional[str] = Field(default=None, description="The content of the prompt, if it's a string.")
     messages: Optional[List[Union[MessageTemplate, str]]] = Field(
         default=None,
         description="The list of messages included in the prompt. Used for chat models.",
@@ -456,9 +444,7 @@ class InputRails(BaseModel):
 class OutputRailsStreamingConfig(BaseModel):
     """Configuration for managing streaming output of LLM tokens."""
 
-    enabled: bool = Field(
-        default=False, description="Enables streaming mode when True."
-    )
+    enabled: bool = Field(default=False, description="Enables streaming mode when True.")
     chunk_size: int = Field(
         default=200,
         description="The number of tokens in each processing chunk. This is the size of the token block on which output rails are applied.",
@@ -586,9 +572,7 @@ class JailbreakDetectionConfig(BaseModel):
         default=None,
         description="The endpoint for the jailbreak detection heuristics/model container.",
     )
-    length_per_perplexity_threshold: float = Field(
-        default=89.79, description="The length/perplexity threshold."
-    )
+    length_per_perplexity_threshold: float = Field(default=89.79, description="The length/perplexity threshold.")
     prefix_suffix_perplexity_threshold: float = Field(
         default=1845.65, description="The prefix/suffix perplexity threshold."
     )
@@ -857,22 +841,14 @@ class Rails(BaseModel):
         default_factory=RailsConfigData,
         description="Configuration data for specific rails that are supported out-of-the-box.",
     )
-    input: InputRails = Field(
-        default_factory=InputRails, description="Configuration of the input rails."
-    )
-    output: OutputRails = Field(
-        default_factory=OutputRails, description="Configuration of the output rails."
-    )
+    input: InputRails = Field(default_factory=InputRails, description="Configuration of the input rails.")
+    output: OutputRails = Field(default_factory=OutputRails, description="Configuration of the output rails.")
     retrieval: RetrievalRails = Field(
         default_factory=RetrievalRails,
         description="Configuration of the retrieval rails.",
     )
-    dialog: DialogRails = Field(
-        default_factory=DialogRails, description="Configuration of the dialog rails."
-    )
-    actions: ActionRails = Field(
-        default_factory=ActionRails, description="Configuration of action rails."
-    )
+    dialog: DialogRails = Field(default_factory=DialogRails, description="Configuration of the dialog rails.")
+    actions: ActionRails = Field(default_factory=ActionRails, description="Configuration of action rails.")
 
 
 def merge_two_dicts(dict_1: dict, dict_2: dict, ignore_keys: Set[str]) -> None:
@@ -904,29 +880,19 @@ def _join_config(dest_config: dict, additional_config: dict):
         **additional_config.get("bot_messages", {}),
     }
 
-    dest_config["instructions"] = dest_config.get(
-        "instructions", []
-    ) + additional_config.get("instructions", [])
+    dest_config["instructions"] = dest_config.get("instructions", []) + additional_config.get("instructions", [])
 
-    dest_config["flows"] = dest_config.get("flows", []) + additional_config.get(
-        "flows", []
-    )
+    dest_config["flows"] = dest_config.get("flows", []) + additional_config.get("flows", [])
 
-    dest_config["models"] = dest_config.get("models", []) + additional_config.get(
-        "models", []
-    )
+    dest_config["models"] = dest_config.get("models", []) + additional_config.get("models", [])
 
-    dest_config["prompts"] = dest_config.get("prompts", []) + additional_config.get(
-        "prompts", []
-    )
+    dest_config["prompts"] = dest_config.get("prompts", []) + additional_config.get("prompts", [])
 
-    dest_config["docs"] = dest_config.get("docs", []) + additional_config.get(
-        "docs", []
-    )
+    dest_config["docs"] = dest_config.get("docs", []) + additional_config.get("docs", [])
 
-    dest_config["actions_server_url"] = dest_config.get(
+    dest_config["actions_server_url"] = dest_config.get("actions_server_url", None) or additional_config.get(
         "actions_server_url", None
-    ) or additional_config.get("actions_server_url", None)
+    )
 
     dest_config["sensitive_data_detection"] = {
         **dest_config.get("sensitive_data_detection", {}),
@@ -983,9 +949,7 @@ def _join_config(dest_config: dict, additional_config: dict):
     )
 
     # Reads all the other fields and merges them with the custom_data field
-    merge_two_dicts(
-        dest_config.get("custom_data", {}), additional_config, ignore_fields
-    )
+    merge_two_dicts(dest_config.get("custom_data", {}), additional_config, ignore_fields)
 
 
 def _load_path(
@@ -1017,9 +981,7 @@ def _load_path(
 
             for file in files:
                 # Verify railsignore to skip loading
-                ignored_by_railsignore = utils.is_ignored_by_railsignore(
-                    file, ignore_patterns
-                )
+                ignored_by_railsignore = utils.is_ignored_by_railsignore(file, ignore_patterns)
 
                 if ignored_by_railsignore:
                     continue
@@ -1036,9 +998,7 @@ def _load_path(
                     _raw_config = {"docs": []}
                     if rel_path.endswith(".md"):
                         with open(full_path, encoding="utf-8") as f:
-                            _raw_config["docs"].append(
-                                {"format": "md", "content": f.read()}
-                            )
+                            _raw_config["docs"].append({"format": "md", "content": f.read()})
 
                 elif file.endswith(".yml") or file.endswith(".yaml"):
                     with open(full_path, "r", encoding="utf-8") as f:
@@ -1084,9 +1044,7 @@ def _load_imported_paths(raw_config: dict, colang_files: List[Tuple[str, str]]):
                         break
 
                     # We also check if we can load it as a file.
-                    if not import_path.endswith(".co") and os.path.exists(
-                        os.path.join(root, import_path + ".co")
-                    ):
+                    if not import_path.endswith(".co") and os.path.exists(os.path.join(root, import_path + ".co")):
                         actual_path = os.path.join(root, import_path + ".co")
                         break
             else:
@@ -1128,13 +1086,9 @@ def _parse_colang_files_recursively(
         with open(current_path, "r", encoding="utf-8") as f:
             try:
                 content = f.read()
-                _parsed_config = parse_colang_file(
-                    current_file, content=content, version=colang_version
-                )
+                _parsed_config = parse_colang_file(current_file, content=content, version=colang_version)
             except ValueError as e:
-                raise ColangParsingError(
-                    f"Unsupported colang version {colang_version} for file: {current_path}"
-                ) from e
+                raise ColangParsingError(f"Unsupported colang version {colang_version} for file: {current_path}") from e
             except Exception as e:
                 raise ColangParsingError(
                     f"Error while parsing Colang file: {current_path}\n"
@@ -1161,9 +1115,7 @@ def _parse_colang_files_recursively(
 
         current_file = "INTRINSIC_FLOW_GENERATION"
 
-        _rails_parsed_config = parse_colang_file(
-            current_file, content=flow_definitions, version=colang_version
-        )
+        _rails_parsed_config = parse_colang_file(current_file, content=flow_definitions, version=colang_version)
 
         _DOCUMENTATION_LINK = "https://docs.nvidia.com/nemo/guardrails/colang-2/getting-started/dialog-rails.html"  # Replace with the actual documentation link
 
@@ -1189,9 +1141,7 @@ class RailsConfig(BaseModel):
     TODO: add typed config for user_messages, bot_messages, and flows.
     """
 
-    models: List[Model] = Field(
-        description="The list of models used by the rails configuration."
-    )
+    models: List[Model] = Field(description="The list of models used by the rails configuration.")
 
     user_messages: Dict[str, List[str]] = Field(
         default_factory=dict,
@@ -1241,9 +1191,7 @@ class RailsConfig(BaseModel):
         description="Allows choosing between different prompting strategies.",
     )
 
-    config_path: Optional[str] = Field(
-        default=None, description="The path from which the configuration was loaded."
-    )
+    config_path: Optional[str] = Field(default=None, description="The path from which the configuration was loaded.")
 
     import_paths: Optional[List[str]] = Field(
         default_factory=list,
@@ -1333,33 +1281,23 @@ class RailsConfig(BaseModel):
             Task.GENERATE_INTENT_STEPS_MESSAGE,
         ]
 
-        embeddings_only = dialog_rails.get("user_messages", {}).get(
-            "embeddings_only", False
-        )
+        embeddings_only = dialog_rails.get("user_messages", {}).get("embeddings_only", False)
 
         has_dialog_rail_configs = (
-            bool(values.get("user_messages"))
-            or bool(values.get("bot_messages"))
-            or bool(values.get("flows"))
+            bool(values.get("user_messages")) or bool(values.get("bot_messages")) or bool(values.get("flows"))
         )
 
         # dialog rails are activated (explicitly or implicitly) and require validation
         # skip validation when embeddings_only is True
-        has_dialog_rails = (
-            bool(dialog_rails) or has_dialog_rail_configs
-        ) and not embeddings_only
+        has_dialog_rails = (bool(dialog_rails) or has_dialog_rail_configs) and not embeddings_only
 
         if has_dialog_rails:
-            main_model = next(
-                (model for model in models if model.get("type") == "main"), None
-            )
+            main_model = next((model for model in models if model.get("type") == "main"), None)
 
             violations = []
 
             for task in dialog_rail_tasks:
-                task_model = next(
-                    (model for model in models if model.get("type") == task.value), None
-                )
+                task_model = next((model for model in models if model.get("type") == task.value), None)
 
                 if task_model:
                     reasoning_config = (
@@ -1398,50 +1336,29 @@ class RailsConfig(BaseModel):
 
         enabled_input_rails = rails.get("input", {}).get("flows", [])
         enabled_output_rails = rails.get("output", {}).get("flows", [])
-        provided_task_prompts = [
-            prompt.task if hasattr(prompt, "task") else prompt.get("task")
-            for prompt in prompts
-        ]
+        provided_task_prompts = [prompt.task if hasattr(prompt, "task") else prompt.get("task") for prompt in prompts]
 
         # Input moderation prompt verification
-        if (
-            "self check input" in enabled_input_rails
-            and "self_check_input" not in provided_task_prompts
-        ):
+        if "self check input" in enabled_input_rails and "self_check_input" not in provided_task_prompts:
             raise ValueError("You must provide a `self_check_input` prompt template.")
-        if (
-            "llama guard check input" in enabled_input_rails
-            and "llama_guard_check_input" not in provided_task_prompts
-        ):
-            raise ValueError(
-                "You must provide a `llama_guard_check_input` prompt template."
-            )
+        if "llama guard check input" in enabled_input_rails and "llama_guard_check_input" not in provided_task_prompts:
+            raise ValueError("You must provide a `llama_guard_check_input` prompt template.")
 
         # Output moderation prompt verification
-        if (
-            "self check output" in enabled_output_rails
-            and "self_check_output" not in provided_task_prompts
-        ):
+        if "self check output" in enabled_output_rails and "self_check_output" not in provided_task_prompts:
             raise ValueError("You must provide a `self_check_output` prompt template.")
         if (
             "llama guard check output" in enabled_output_rails
             and "llama_guard_check_output" not in provided_task_prompts
         ):
-            raise ValueError(
-                "You must provide a `llama_guard_check_output` prompt template."
-            )
+            raise ValueError("You must provide a `llama_guard_check_output` prompt template.")
         if (
             "patronus lynx check output hallucination" in enabled_output_rails
             and "patronus_lynx_check_output_hallucination" not in provided_task_prompts
         ):
-            raise ValueError(
-                "You must provide a `patronus_lynx_check_output_hallucination` prompt template."
-            )
+            raise ValueError("You must provide a `patronus_lynx_check_output_hallucination` prompt template.")
 
-        if (
-            "self check facts" in enabled_output_rails
-            and "self_check_facts" not in provided_task_prompts
-        ):
+        if "self check facts" in enabled_output_rails and "self_check_facts" not in provided_task_prompts:
             raise ValueError("You must provide a `self_check_facts` prompt template.")
 
         return values
@@ -1458,19 +1375,9 @@ class RailsConfig(BaseModel):
         prompts = values.get("prompts") or []
         for prompt in prompts:
             task = prompt.task if hasattr(prompt, "task") else prompt.get("task")
-            output_parser = (
-                prompt.output_parser
-                if hasattr(prompt, "output_parser")
-                else prompt.get("output_parser")
-            )
+            output_parser = prompt.output_parser if hasattr(prompt, "output_parser") else prompt.get("output_parser")
 
-            if (
-                any(
-                    task.startswith(task_prefix)
-                    for task_prefix in tasks_requiring_output_parser
-                )
-                and not output_parser
-            ):
+            if any(task.startswith(task_prefix) for task_prefix in tasks_requiring_output_parser) and not output_parser:
                 log.info(
                     f"Deprecation Warning: Output parser is not registered for the task. "
                     f"The correct way is to register the 'output_parser' in the prompts.yml for '{task}' task. "
@@ -1490,9 +1397,7 @@ class RailsConfig(BaseModel):
                 values["instructions"] = _default_config_v2["instructions"]
 
             if not sample_conversation:
-                values["sample_conversation"] = _default_config_v2[
-                    "sample_conversation"
-                ]
+                values["sample_conversation"] = _default_config_v2["sample_conversation"]
 
         return values
 
@@ -1502,9 +1407,7 @@ class RailsConfig(BaseModel):
         api_keys = [m.api_key_env_var for m in models]
         for api_key in api_keys:
             if api_key and not os.environ.get(api_key):
-                raise ValueError(
-                    f"Model API Key environment variable '{api_key}' not set."
-                )
+                raise ValueError(f"Model API Key environment variable '{api_key}' not set.")
         return models
 
     raw_llm_call_action: Optional[str] = Field(
@@ -1535,9 +1438,7 @@ class RailsConfig(BaseModel):
                 _load_imported_paths(raw_config, colang_files)
 
             # Parse the colang files after we know the colang version
-            _parse_colang_files_recursively(
-                raw_config, colang_files, parsed_colang_files=[]
-            )
+            _parse_colang_files_recursively(raw_config, colang_files, parsed_colang_files=[])
 
         else:
             raise ValueError(f"Invalid config path {config_path}.")
@@ -1614,9 +1515,7 @@ class RailsConfig(BaseModel):
         if obj.get("colang_version", "1.0") == "1.0":
             for flow_data in obj.get("flows", []):
                 # If the first element in the flow does not have a "_type", we need to convert
-                if flow_data.get("elements") and not flow_data["elements"][0].get(
-                    "_type"
-                ):
+                if flow_data.get("elements") and not flow_data["elements"][0].get("_type"):
                     flow_data["elements"] = parse_flow_elements(flow_data["elements"])
 
         return cls.parse_obj(obj)
@@ -1676,9 +1575,7 @@ def _unique_list_concat(list1, list2):
     return result
 
 
-def _join_rails_configs(
-    base_rails_config: RailsConfig, updated_rails_config: RailsConfig
-):
+def _join_rails_configs(base_rails_config: RailsConfig, updated_rails_config: RailsConfig):
     """Helper to join two rails configuration."""
 
     config_old_types = {}
@@ -1688,20 +1585,14 @@ def _join_rails_configs(
     for model_new in updated_rails_config.models:
         if model_new.type in config_old_types:
             if model_new.engine != config_old_types[model_new.type].engine:
-                raise ValueError(
-                    "Both config files should have the same engine for the same model type"
-                )
+                raise ValueError("Both config files should have the same engine for the same model type")
             if model_new.model != config_old_types[model_new.type].model:
-                raise ValueError(
-                    "Both config files should have the same model for the same model type"
-                )
+                raise ValueError("Both config files should have the same model for the same model type")
 
     if base_rails_config.actions_server_url != updated_rails_config.actions_server_url:
         raise ValueError("Both config files should have the same actions_server_url")
 
-    combined_rails_config_dict = _join_dict(
-        base_rails_config.dict(), updated_rails_config.dict()
-    )
+    combined_rails_config_dict = _join_dict(base_rails_config.dict(), updated_rails_config.dict())
     # filter out empty strings to avoid leading/trailing commas
     config_paths = [
         base_rails_config.dict()["config_path"] or "",
@@ -1715,12 +1606,8 @@ def _join_rails_configs(
 def _has_input_output_config_rails(raw_config):
     """Checks if the raw configuration has input/output rails configured."""
 
-    has_input_rails = (
-        len(raw_config.get("rails", {}).get("input", {}).get("flows", [])) > 0
-    )
-    has_output_rails = (
-        len(raw_config.get("rails", {}).get("output", {}).get("flows", [])) > 0
-    )
+    has_input_rails = len(raw_config.get("rails", {}).get("input", {}).get("flows", [])) > 0
+    has_output_rails = len(raw_config.get("rails", {}).get("output", {}).get("flows", [])) > 0
     return has_input_rails or has_output_rails
 
 

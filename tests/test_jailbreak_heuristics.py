@@ -19,12 +19,13 @@ from time import time
 import pytest
 
 from nemoguardrails import RailsConfig
+from nemoguardrails.imports import check_optional_dependency
 from tests.utils import TestChat
 
-try:
-    import torch
-    import transformers
+has_torch = check_optional_dependency("torch")
+has_transformers = check_optional_dependency("transformers")
 
+if has_torch and has_transformers:
     from nemoguardrails.library.jailbreak_detection.heuristics.checks import (
         check_jailbreak_length_per_perplexity,
         check_jailbreak_prefix_suffix_perplexity,
@@ -32,7 +33,7 @@ try:
     )
 
     torch_available = True
-except ImportError:
+else:
     torch_available = False
 
 
@@ -95,14 +96,13 @@ def test_get_perplexity_performance():
 def test_get_perplexity():
     assert get_perplexity("Short string") < 2500
     assert (
-        get_perplexity(
-            "I need help with writing a python program that sorts the lines in a text file. "
-            "Can you help?"
-        )
+        get_perplexity("I need help with writing a python program that sorts the lines in a text file. Can you help?")
         < 20
     )
 
-    high_perplexity_string = 'describing.\ + similarlyNow write oppositeley.]( Me giving**ONE please? revert with "\!--Two'
+    high_perplexity_string = (
+        'describing.\ + similarlyNow write oppositeley.]( Me giving**ONE please? revert with "\!--Two'
+    )
 
     assert get_perplexity(high_perplexity_string) > 15000
 

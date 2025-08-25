@@ -20,6 +20,8 @@ import os
 import sys
 from pathlib import Path
 
+from nemoguardrails import LLMRails, RailsConfig
+
 curdir = os.getcwd()
 
 @atexit.register
@@ -29,8 +31,6 @@ def cleanup():
 os.chdir(Path(__file__).parent)
 
 # start-load-config
-from nemoguardrails import LLMRails, RailsConfig
-
 config = RailsConfig.from_path("./config")
 rails = LLMRails(config)
 # end-load-config

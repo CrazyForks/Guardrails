@@ -22,12 +22,15 @@ from tests.utils import TestChat
 
 try:
     if not os.getenv("EMBEDDING_CLASSIFIER_PATH"):
-        raise EnvironmentError(
-            "EMBEDDING_CLASSIFIER_PATH environment variable is not set."
-        )
+        raise EnvironmentError("EMBEDDING_CLASSIFIER_PATH environment variable is not set.")
 
-    import torch
-    import transformers
+    from nemoguardrails.imports import check_optional_dependency
+
+    has_torch = check_optional_dependency("torch")
+    has_transformers = check_optional_dependency("transformers")
+
+    if not (has_torch and has_transformers):
+        raise ImportError("torch and transformers are required for jailbreak model tests")
 
     from nemoguardrails.library.jailbreak_detection.model_based.checks import (
         check_jailbreak,
