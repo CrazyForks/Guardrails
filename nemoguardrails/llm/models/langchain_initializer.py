@@ -46,9 +46,7 @@ class ModelInitializationError(Exception):
     pass
 
 
-ModelInitMethod = Callable[
-    [str, str, Dict[str, Any]], Optional[Union[BaseChatModel, BaseLLM]]
-]
+ModelInitMethod = Callable[[str, str, Dict[str, Any]], Optional[Union[BaseChatModel, BaseLLM]]]
 
 
 class ModelInitializer:
@@ -133,9 +131,7 @@ def init_langchain_model(
     if mode not in ["chat", "text"]:
         raise ValueError(f"Unsupported mode: {mode}")
     if not model_name:
-        raise ModelInitializationError(
-            f"Model name is required for provider {provider_name}"
-        )
+        raise ModelInitializationError(f"Model name is required for provider {provider_name}")
 
     # Define initialization methods in order of preference
     initializers: list[ModelInitializer] = [
@@ -176,10 +172,7 @@ def init_langchain_model(
             last_exception = e
             log.debug(f"Initialization failed with {initializer}: {e}")
     # build the final message, preferring that first ImportError if we saw one
-    base = (
-        f"Failed to initialize model {model_name!r} "
-        f"with provider {provider_name!r} in {mode!r} mode"
-    )
+    base = f"Failed to initialize model {model_name!r} with provider {provider_name!r} in {mode!r} mode"
 
     # if we ever hit an ImportError, surface its message:
     if first_import_error is not None:
@@ -196,9 +189,7 @@ def init_langchain_model(
     raise ModelInitializationError(base)
 
 
-def _init_chat_completion_model(
-    model_name: str, provider_name: str, kwargs: Dict[str, Any]
-) -> BaseChatModel:  # noqa #type: ignore
+def _init_chat_completion_model(model_name: str, provider_name: str, kwargs: Dict[str, Any]) -> BaseChatModel:  # noqa #type: ignore
     """Initialize a chat completion model.
 
     Args:
@@ -233,9 +224,7 @@ def _init_chat_completion_model(
         raise
 
 
-def _init_text_completion_model(
-    model_name: str, provider_name: str, kwargs: Dict[str, Any]
-) -> BaseLLM:
+def _init_text_completion_model(model_name: str, provider_name: str, kwargs: Dict[str, Any]) -> BaseLLM:
     """Initialize a text completion model.
 
     Args:
@@ -259,9 +248,7 @@ def _init_text_completion_model(
     return provider_cls(**kwargs)
 
 
-def _init_community_chat_models(
-    model_name: str, provider_name: str, kwargs: Dict[str, Any]
-) -> BaseChatModel:
+def _init_community_chat_models(model_name: str, provider_name: str, kwargs: Dict[str, Any]) -> BaseChatModel:
     """Initialize community chat models.
 
     Args:
@@ -283,9 +270,7 @@ def _init_community_chat_models(
     return provider_cls(**kwargs)
 
 
-def _init_gpt35_turbo_instruct(
-    model_name: str, provider_name: str, kwargs: Dict[str, Any]
-) -> BaseLLM:
+def _init_gpt35_turbo_instruct(model_name: str, provider_name: str, kwargs: Dict[str, Any]) -> BaseLLM:
     """Initialize GPT-3.5 Turbo Instruct model.
 
     Currently init_chat_model from langchain infers this as a chat model.
@@ -311,14 +296,10 @@ def _init_gpt35_turbo_instruct(
             kwargs=kwargs,
         )
     except Exception as e:
-        raise ModelInitializationError(
-            f"Failed to initialize text completion model {model_name}: {str(e)}"
-        )
+        raise ModelInitializationError(f"Failed to initialize text completion model {model_name}: {str(e)}")
 
 
-def _init_nvidia_model(
-    model_name: str, provider_name: str, kwargs: Dict[str, Any]
-) -> BaseChatModel:
+def _init_nvidia_model(model_name: str, provider_name: str, kwargs: Dict[str, Any]) -> BaseChatModel:
     """Initialize NVIDIA AI Endpoints model.
 
     Args:

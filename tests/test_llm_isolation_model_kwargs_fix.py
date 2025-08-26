@@ -130,9 +130,7 @@ class TestLLMIsolationModelKwargsFix:
         """Test with LLM that has model_kwargs field."""
         rails = LLMRails(config=test_config, verbose=False)
 
-        llm_with_kwargs = FlexibleLLMWithModelKwargs(
-            model_kwargs={"custom_param": "value"}, temperature=0.3
-        )
+        llm_with_kwargs = FlexibleLLMWithModelKwargs(model_kwargs={"custom_param": "value"}, temperature=0.3)
 
         isolated_llm = rails._create_action_llm_copy(llm_with_kwargs, "test_action")
 
@@ -183,9 +181,7 @@ class TestLLMIsolationModelKwargsFix:
         assert isolated_strict.temperature == 0.2
         assert isolated_strict.max_tokens == 100
 
-        flexible_llm = FlexibleLLMWithModelKwargs(
-            model_kwargs={"key": "value"}, temperature=0.9
-        )
+        flexible_llm = FlexibleLLMWithModelKwargs(model_kwargs={"key": "value"}, temperature=0.9)
         isolated_flexible = rails._create_action_llm_copy(flexible_llm, "action2")
 
         assert isolated_flexible.temperature == 0.9

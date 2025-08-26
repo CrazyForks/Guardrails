@@ -58,28 +58,19 @@ async def test_parallel_rails_success():
 
     # Check that all rails were executed
     assert result.log.activated_rails[0].name == "self check input"
-    assert (
-        result.log.activated_rails[1].name == "check blocked input terms $duration=1.0"
-    )
-    assert (
-        result.log.activated_rails[2].name == "check blocked input terms $duration=1.0"
-    )
+    assert result.log.activated_rails[1].name == "check blocked input terms $duration=1.0"
+    assert result.log.activated_rails[2].name == "check blocked input terms $duration=1.0"
     assert result.log.activated_rails[3].name == "generate user intent"
     assert result.log.activated_rails[4].name == "self check output"
-    assert (
-        result.log.activated_rails[5].name == "check blocked output terms $duration=1.0"
-    )
-    assert (
-        result.log.activated_rails[6].name == "check blocked output terms $duration=1.0"
-    )
+    assert result.log.activated_rails[5].name == "check blocked output terms $duration=1.0"
+    assert result.log.activated_rails[6].name == "check blocked output terms $duration=1.0"
 
     # Time should be close to 2 seconds due to parallel processing:
     # check blocked input terms: 1s
     # check blocked output terms: 1s
-    assert (
-        result.log.stats.input_rails_duration < 1.5
-        and result.log.stats.output_rails_duration < 1.5
-    ), "Rails processing took too long, parallelization seems to be not working."
+    assert result.log.stats.input_rails_duration < 1.5 and result.log.stats.output_rails_duration < 1.5, (
+        "Rails processing took too long, parallelization seems to be not working."
+    )
 
 
 @pytest.mark.asyncio
@@ -147,8 +138,4 @@ async def test_parallel_rails_output_fail_2():
 
     chat >> "hi!"
     result = await chat.app.generate_async(messages=chat.history, options=OPTIONS)
-    assert (
-        result
-        and result.response[0]["content"]
-        == "I cannot express a term in the bot answer."
-    )
+    assert result and result.response[0]["content"] == "I cannot express a term in the bot answer."

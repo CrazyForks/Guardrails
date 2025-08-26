@@ -269,11 +269,7 @@ def verbose_v1(colang_history: str) -> str:
     for i, line in enumerate(lines):
         if line.startswith('user "'):
             lines[i] = 'User message: "' + line[6:]
-        elif (
-            line.startswith("  ")
-            and i > 0
-            and lines[i - 1].startswith("User message: ")
-        ):
+        elif line.startswith("  ") and i > 0 and lines[i - 1].startswith("User message: "):
             lines[i] = "User intent: " + line.strip()
         elif line.startswith("user "):
             lines[i] = "User intent: " + line[5:].strip()
@@ -507,9 +503,7 @@ def find_reasoning_tokens_position(
     return _find_token_positions_for_removal(response, start_token, end_token)
 
 
-def extract_and_strip_trace(
-    response: str, start_token: str, end_token: str
-) -> ReasoningExtractionResult:
+def extract_and_strip_trace(response: str, start_token: str, end_token: str) -> ReasoningExtractionResult:
     """Extracts and removes reasoning traces from the given text.
 
     This function identifies reasoning traces in the text that are marked
@@ -527,9 +521,7 @@ def extract_and_strip_trace(
         without reasoning traces and the extracted reasoning trace, if any.
     """
 
-    start_index, end_index = find_reasoning_tokens_position(
-        response, start_token, end_token
-    )
+    start_index, end_index = find_reasoning_tokens_position(response, start_token, end_token)
     # handles invalid/empty tokens returned as (-1, -1)
     if start_index == -1 and end_index == -1:
         return ReasoningExtractionResult(text=response, reasoning_trace=None)
@@ -540,8 +532,6 @@ def extract_and_strip_trace(
     if start_index < end_index:
         reasoning_trace = response[start_index : end_index + len(end_token)]
         cleaned_text = response[:start_index] + response[end_index + len(end_token) :]
-        return ReasoningExtractionResult(
-            text=cleaned_text, reasoning_trace=reasoning_trace
-        )
+        return ReasoningExtractionResult(text=cleaned_text, reasoning_trace=reasoning_trace)
 
     return ReasoningExtractionResult(text=response, reasoning_trace=None)

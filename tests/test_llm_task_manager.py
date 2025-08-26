@@ -448,15 +448,9 @@ def test_reasoning_traces_not_included_in_prompt_history():
     assert isinstance(rendered_prompt, str)
 
     assert "<think>I should greet the user back.</think>" not in rendered_prompt
-    assert (
-        "<think>I should explain I don't have real-time weather data.</think>"
-        not in rendered_prompt
-    )
+    assert "<think>I should explain I don't have real-time weather data.</think>" not in rendered_prompt
 
-    assert (
-        "Hi there!" in rendered_prompt
-        or "I don't have access to real-time weather information." in rendered_prompt
-    )
+    assert "Hi there!" in rendered_prompt or "I don't have access to real-time weather information." in rendered_prompt
 
 
 def test_get_task_model_with_empty_models():
@@ -525,9 +519,7 @@ def test_get_task_model_with_main_model():
 
 def test_get_task_model_fallback_to_main():
     """Test that get_task_model falls back to main model when specific task model not found."""
-    config = RailsConfig.parse_object(
-        {"models": [{"type": "main", "engine": "openai", "model": "gpt-3.5-turbo"}]}
-    )
+    config = RailsConfig.parse_object({"models": [{"type": "main", "engine": "openai", "model": "gpt-3.5-turbo"}]})
 
     result = get_task_model(config, "some_other_task")
     assert result is not None

@@ -145,9 +145,7 @@ class LLMRails:
             default_flows_path = os.path.join(current_folder, default_flows_file)
             with open(default_flows_path, "r") as f:
                 default_flows_content = f.read()
-                default_flows = parse_colang_file(
-                    default_flows_file, default_flows_content
-                )["flows"]
+                default_flows = parse_colang_file(default_flows_file, default_flows_content)["flows"]
 
             # We mark all the default flows as system flows.
             for flow_config in default_flows:
@@ -165,9 +163,7 @@ class LLMRails:
                     if file.endswith(".co"):
                         log.debug(f"Loading file: {full_path}")
                         with open(full_path, "r", encoding="utf-8") as f:
-                            content = parse_colang_file(
-                                file, content=f.read(), version=config.colang_version
-                            )
+                            content = parse_colang_file(file, content=f.read(), version=config.colang_version)
                             if not content:
                                 continue
 
@@ -179,20 +175,14 @@ class LLMRails:
                         self.config.flows.extend(content["flows"])
 
                         # And all the messages as well, if they have not been overwritten
-                        for message_id, utterances in content.get(
-                            "bot_messages", {}
-                        ).items():
+                        for message_id, utterances in content.get("bot_messages", {}).items():
                             if message_id not in self.config.bot_messages:
                                 self.config.bot_messages[message_id] = utterances
 
         # Last but not least, we mark all the flows that are used in any of the rails
         # as system flows (so they don't end up in the prompt).
 
-        rail_flow_ids = (
-            config.rails.input.flows
-            + config.rails.output.flows
-            + config.rails.retrieval.flows
-        )
+        rail_flow_ids = config.rails.input.flows + config.rails.output.flows + config.rails.retrieval.flows
 
         for flow_config in self.config.flows:
             if flow_config.get("id") in rail_flow_ids:
@@ -203,9 +193,7 @@ class LLMRails:
 
         # We check if the configuration or any of the imported ones have config.py modules.
         config_modules = []
-        for _path in list(self.config.imported_paths.values()) + [
-            self.config.config_path
-        ]:
+        for _path in list(self.config.imported_paths.values()) + [self.config.config_path]:
             if _path:
                 filepath = os.path.join(_path, "config.py")
                 if os.path.exists(filepath):
@@ -255,9 +243,7 @@ class LLMRails:
 
         # Next, we initialize the LLM Generate actions and register them.
         llm_generation_actions_class = (
-            LLMGenerationActions
-            if config.colang_version == "1.0"
-            else LLMGenerationActionsV2dotx
+            LLMGenerationActions if config.colang_version == "1.0" else LLMGenerationActionsV2dotx
         )
         self.llm_generation_actions = llm_generation_actions_class(
             config=config,
@@ -311,22 +297,16 @@ class LLMRails:
             # content safety check input/output flows are special as they have parameters
             flow_name = _normalize_flow_id(flow_name)
             if flow_name not in existing_flows_names:
-                raise ValueError(
-                    f"The provided input rail flow `{flow_name}` does not exist"
-                )
+                raise ValueError(f"The provided input rail flow `{flow_name}` does not exist")
 
         for flow_name in self.config.rails.output.flows:
             flow_name = _normalize_flow_id(flow_name)
             if flow_name not in existing_flows_names:
-                raise ValueError(
-                    f"The provided output rail flow `{flow_name}` does not exist"
-                )
+                raise ValueError(f"The provided output rail flow `{flow_name}` does not exist")
 
         for flow_name in self.config.rails.retrieval.flows:
             if flow_name not in existing_flows_names:
-                raise ValueError(
-                    f"The provided retrieval rail flow `{flow_name}` does not exist"
-                )
+                raise ValueError(f"The provided retrieval rail flow `{flow_name}` does not exist")
 
         # If both passthrough mode and single call mode are specified, we raise an exception.
         if self.config.passthrough and self.config.rails.dialog.single_call.enabled:
@@ -437,9 +417,7 @@ class LLMRails:
             self._configure_main_llm_streaming(self.llm)
         else:
             # Otherwise, initialize the main LLM from the config
-            main_model = next(
-                (model for model in self.config.models if model.type == "main"), None
-            )
+            main_model = next((model for model in self.config.models if model.type == "main"), None)
 
             if main_model:
                 kwargs = self._prepare_model_kwargs(main_model)
@@ -457,9 +435,7 @@ class LLMRails:
                     provider_name=main_model.engine,
                 )
             else:
-                log.warning(
-                    "No main LLM specified in the config and no LLM provided via constructor."
-                )
+                log.warning("No main LLM specified in the config and no LLM provided via constructor.")
 
         llms = dict()
 
@@ -494,9 +470,7 @@ class LLMRails:
                     model_name = f"{llm_config.type}_llm"
                     if not hasattr(self, model_name):
                         setattr(self, model_name, llm_model)
-                    self.runtime.register_action_param(
-                        model_name, getattr(self, model_name)
-                    )
+                    self.runtime.register_action_param(model_name, getattr(self, model_name))
                     # this is used for content safety and topic control
                     llms[llm_config.type] = getattr(self, model_name)
 
@@ -528,9 +502,7 @@ class LLMRails:
             configured_actions_names = []
             try:
                 if self.config.flows:
-                    get_action_details = partial(
-                        get_action_details_from_flow_id, flows=self.config.flows
-                    )
+                    get_action_details = partial(get_action_details_from_flow_id, flows=self.config.flows)
                     for flow_id in self.config.rails.input.flows:
                         action_name, _ = get_action_details(flow_id)
                         configured_actions_names.append(action_name)
@@ -539,9 +511,7 @@ class LLMRails:
                         configured_actions_names.append(action_name)
                 else:
                     # for configurations without flow definitions, use all actions that need LLMs
-                    log.info(
-                        "No flow definitions found, creating isolated LLMs for all actions requiring them"
-                    )
+                    log.info("No flow definitions found, creating isolated LLMs for all actions requiring them")
                     configured_actions_names = list(actions_needing_llms)
             except Exception as e:
                 # if flow matching fails, fall back to all actions that need LLMs
@@ -557,9 +527,7 @@ class LLMRails:
                 if f"{action_name}_llm" not in self.runtime.registered_action_params:
                     isolated_llm = self._create_action_llm_copy(self.llm, action_name)
                     if isolated_llm:
-                        self.runtime.register_action_param(
-                            f"{action_name}_llm", isolated_llm
-                        )
+                        self.runtime.register_action_param(f"{action_name}_llm", isolated_llm)
                         created_count += 1
                         log.debug("Created isolated LLM for action: %s", action_name)
                 else:
@@ -579,10 +547,7 @@ class LLMRails:
 
         actions_needing_llms = set()
 
-        if (
-            not hasattr(self.runtime, "action_dispatcher")
-            or not self.runtime.action_dispatcher
-        ):
+        if not hasattr(self.runtime, "action_dispatcher") or not self.runtime.action_dispatcher:
             log.debug("Action dispatcher not available")
             return actions_needing_llms
 
@@ -621,15 +586,10 @@ class LLMRails:
             isolated_llm = copy.copy(main_llm)
 
             # isolate model_kwargs to prevent shared mutable state
-            if (
-                hasattr(isolated_llm, "model_kwargs")
-                and isolated_llm.model_kwargs is not None
-            ):
+            if hasattr(isolated_llm, "model_kwargs") and isolated_llm.model_kwargs is not None:
                 isolated_llm.model_kwargs = isolated_llm.model_kwargs.copy()
 
-            log.debug(
-                "Successfully created isolated LLM copy for action: %s", action_name
-            )
+            log.debug("Successfully created isolated LLM copy for action: %s", action_name)
             return isolated_llm
 
         except Exception as e:
@@ -660,15 +620,9 @@ class LLMRails:
             from nemoguardrails.embeddings.basic import BasicEmbeddingsIndex
 
             return BasicEmbeddingsIndex(
-                embedding_model=esp_config.parameters.get(
-                    "embedding_model", self.default_embedding_model
-                ),
-                embedding_engine=esp_config.parameters.get(
-                    "embedding_engine", self.default_embedding_engine
-                ),
-                embedding_params=esp_config.parameters.get(
-                    "embedding_parameters", self.default_embedding_params
-                ),
+                embedding_model=esp_config.parameters.get("embedding_model", self.default_embedding_model),
+                embedding_engine=esp_config.parameters.get("embedding_engine", self.default_embedding_engine),
+                embedding_params=esp_config.parameters.get("embedding_parameters", self.default_embedding_params),
                 cache_config=esp_config.cache,
                 # We make sure we also pass additional relevant params.
                 **{
@@ -888,18 +842,12 @@ class LLMRails:
 
         # If we have generation options, we also add them to the context
         if options:
-            messages = [
-                {"role": "context", "content": {"generation_options": options.dict()}}
-            ] + messages
+            messages = [{"role": "context", "content": {"generation_options": options.dict()}}] + messages
 
         # If the last message is from the assistant, rather than the user, then
         # we move that to the `$bot_message` variable. This is to enable a more
         # convenient interface. (only when dialog rails are disabled)
-        if (
-            messages[-1]["role"] == "assistant"
-            and options
-            and options.rails.dialog is False
-        ):
+        if messages[-1]["role"] == "assistant" and options and options.rails.dialog is False:
             # We already have the first message with a context update, so we use that
             messages[0]["content"]["bot_message"] = messages[-1]["content"]
             messages = messages[0:-1]
@@ -927,9 +875,7 @@ class LLMRails:
             new_events = []
             # Compute the new events.
             try:
-                new_events = await self.runtime.generate_events(
-                    state_events + events, processing_log=processing_log
-                )
+                new_events = await self.runtime.generate_events(state_events + events, processing_log=processing_log)
                 output_state = None
 
             except Exception as e:
@@ -1017,10 +963,7 @@ class LLMRails:
 
         else:
             # Ensure all items in responses are strings
-            responses = [
-                str(response) if not isinstance(response, str) else response
-                for response in responses
-            ]
+            responses = [str(response) if not isinstance(response, str) else response for response in responses]
             new_message = {"role": "assistant", "content": "\n".join(responses)}
         if response_tool_calls:
             new_message["tool_calls"] = response_tool_calls
@@ -1043,15 +986,10 @@ class LLMRails:
         # TODO: add support for logging flag
         self.explain_info.colang_history = get_colang_history(events)
         if self.verbose:
-            log.info(
-                f"Conversation history so far: \n{self.explain_info.colang_history}"
-            )
+            log.info(f"Conversation history so far: \n{self.explain_info.colang_history}")
 
         total_time = time.time() - t0
-        log.info(
-            "--- :: Total processing took %.2f seconds. LLM Stats: %s"
-            % (total_time, llm_stats)
-        )
+        log.info("--- :: Total processing took %.2f seconds. LLM Stats: %s" % (total_time, llm_stats))
 
         # If there is a streaming handler, we make sure we close it now
         streaming_handler = streaming_handler_var.get()
@@ -1075,11 +1013,7 @@ class LLMRails:
 
             # enable log options
             # it is aggressive, but these are required for tracing
-            if (
-                not options.log.activated_rails
-                or not options.log.llm_calls
-                or not options.log.internal_events
-            ):
+            if not options.log.activated_rails or not options.log.llm_calls or not options.log.internal_events:
                 options.log.activated_rails = True
                 options.log.llm_calls = True
                 options.log.internal_events = True
@@ -1096,9 +1030,7 @@ class LLMRails:
                 if prompt:
                     res.response = reasoning_trace + res.response
                 else:
-                    res.response[0]["content"] = (
-                        reasoning_trace + res.response[0]["content"]
-                    )
+                    res.response[0]["content"] = reasoning_trace + res.response[0]["content"]
 
             if self.config.colang_version == "1.0":
                 # If output variables are specified, we extract their values
@@ -1106,9 +1038,7 @@ class LLMRails:
                     context = compute_context(events)
                     if isinstance(options.output_vars, list):
                         # If we have only a selection of keys, we filter to only that.
-                        res.output_data = {
-                            k: context.get(k) for k in options.output_vars
-                        }
+                        res.output_data = {k: context.get(k) for k in options.output_vars}
                     else:
                         # Otherwise, we return the full context
                         res.output_data = context
@@ -1155,9 +1085,7 @@ class LLMRails:
                                     res.llm_output = llm_call.raw_response
             else:
                 if options.output_vars:
-                    raise ValueError(
-                        "The `output_vars` option is not supported for Colang 2.0 configurations."
-                    )
+                    raise ValueError("The `output_vars` option is not supported for Colang 2.0 configurations.")
 
                 if (
                     options.log.activated_rails
@@ -1165,14 +1093,10 @@ class LLMRails:
                     or options.log.internal_events
                     or options.log.colang_history
                 ):
-                    raise ValueError(
-                        "The `log` option is not supported for Colang 2.0 configurations."
-                    )
+                    raise ValueError("The `log` option is not supported for Colang 2.0 configurations.")
 
                 if options.llm_output:
-                    raise ValueError(
-                        "The `llm_output` option is not supported for Colang 2.0 configurations."
-                    )
+                    raise ValueError("The `llm_output` option is not supported for Colang 2.0 configurations.")
 
             # Include the state
             if state is not None:
@@ -1183,12 +1107,8 @@ class LLMRails:
                 # lazy import to avoid circular dependency
                 from nemoguardrails.tracing import Tracer
 
-                span_format = getattr(
-                    self.config.tracing, "span_format", "opentelemetry"
-                )
-                enable_content_capture = getattr(
-                    self.config.tracing, "enable_content_capture", False
-                )
+                span_format = getattr(self.config.tracing, "span_format", "opentelemetry")
+                enable_content_capture = getattr(self.config.tracing, "enable_content_capture", False)
                 # Create a Tracer instance with instantiated adapters and span configuration
                 tracer = Tracer(
                     input=messages,
@@ -1254,9 +1174,7 @@ class LLMRails:
 
         self.explain_info = self._ensure_explain_info()
 
-        streaming_handler = StreamingHandler(
-            include_generation_metadata=include_generation_metadata
-        )
+        streaming_handler = StreamingHandler(include_generation_metadata=include_generation_metadata)
 
         # Create a properly managed task with exception handling
         async def _generation_task():
@@ -1361,9 +1279,7 @@ class LLMRails:
 
         # Compute the new events.
         processing_log = []
-        new_events = await self.runtime.generate_events(
-            events, processing_log=processing_log
-        )
+        new_events = await self.runtime.generate_events(events, processing_log=processing_log)
 
         # If logging is enabled, we log the conversation
         # TODO: add support for logging flag
@@ -1418,9 +1334,7 @@ class LLMRails:
         # We need to protect 'process_events' to be called only once at a time
         # TODO (cschueller): Why is this?
         async with process_events_semaphore:
-            output_events, output_state = await self.runtime.process_events(
-                events, state, blocking
-            )
+            output_events, output_state = await self.runtime.process_events(events, state, blocking)
 
         took = time.time() - t0
         # Small tweak, disable this when there were no events (or it was just too fast).
@@ -1445,9 +1359,7 @@ class LLMRails:
             )
 
         loop = get_or_create_event_loop()
-        return loop.run_until_complete(
-            self.process_events_async(events, state, blocking)
-        )
+        return loop.run_until_complete(self.process_events_async(events, state, blocking))
 
     def register_action(self, action: callable, name: Optional[str] = None) -> Self:
         """Register a custom action for the rails configuration."""
@@ -1478,9 +1390,7 @@ class LLMRails:
         self.runtime.llm_task_manager.register_prompt_context(name, value_or_fn)
         return self
 
-    def register_embedding_search_provider(
-        self, name: str, cls: Type[EmbeddingsIndex]
-    ) -> Self:
+    def register_embedding_search_provider(self, name: str, cls: Type[EmbeddingsIndex]) -> Self:
         """Register a new embedding search provider.
 
         Args:
@@ -1491,9 +1401,7 @@ class LLMRails:
         self.embedding_search_providers[name] = cls
         return self
 
-    def register_embedding_provider(
-        self, cls: Type[EmbeddingModel], name: Optional[str] = None
-    ) -> Self:
+    def register_embedding_provider(self, cls: Type[EmbeddingModel], name: Optional[str] = None) -> Self:
         """Register a custom embedding provider.
 
         Args:
@@ -1620,9 +1528,7 @@ class LLMRails:
                 "config": self.config,
                 "model_name": model_name,
                 "llms": self.runtime.registered_action_params.get("llms", {}),
-                "llm": self.runtime.registered_action_params.get(
-                    f"{action_name}_llm", self.llm
-                ),
+                "llm": self.runtime.registered_action_params.get(f"{action_name}_llm", self.llm),
                 **action_params,
             }
 
@@ -1630,18 +1536,14 @@ class LLMRails:
         buffer_strategy = get_buffer_strategy(output_rails_streaming_config)
         output_rails_flows_id = self.config.rails.output.flows
         stream_first = stream_first or output_rails_streaming_config.stream_first
-        get_action_details = partial(
-            get_action_details_from_flow_id, flows=self.config.flows
-        )
+        get_action_details = partial(get_action_details_from_flow_id, flows=self.config.flows)
 
         parallel_mode = getattr(self.config.rails.output, "parallel", False)
 
         async for chunk_batch in buffer_strategy(streaming_handler):
             user_output_chunks = chunk_batch.user_output_chunks
             # format processing_context for output rails processing (needs full context)
-            bot_response_chunk = buffer_strategy.format_chunks(
-                chunk_batch.processing_context
-            )
+            bot_response_chunk = buffer_strategy.format_chunks(chunk_batch.processing_context)
 
             # check if user_output_chunks is a list of individual chunks
             # or if it's a JSON string, by convention this means an error occurred and the error dict is stored as a JSON
@@ -1661,9 +1563,7 @@ class LLMRails:
 
             if parallel_mode:
                 try:
-                    context = _prepare_context_for_parallel_rails(
-                        bot_response_chunk, prompt, messages
-                    )
+                    context = _prepare_context_for_parallel_rails(bot_response_chunk, prompt, messages)
                     events = _create_events_for_chunk(bot_response_chunk, context)
 
                     flows_with_params = {}
@@ -1694,9 +1594,7 @@ class LLMRails:
                     result, status = result_tuple
 
                     if status != "success":
-                        log.error(
-                            f"Parallel rails execution failed with status: {status}"
-                        )
+                        log.error(f"Parallel rails execution failed with status: {status}")
                         # continue processing the chunk even if rails fail
                         pass
                     else:
@@ -1708,9 +1606,7 @@ class LLMRails:
                             error_type = stop_event.get("error_type")
 
                             if error_type == "internal_error":
-                                error_message = stop_event.get(
-                                    "error_message", "Unknown error"
-                                )
+                                error_message = stop_event.get("error_message", "Unknown error")
                                 reason = f"Internal error in {blocked_flow} rail: {error_message}"
                                 error_code = "rail_execution_failure"
                                 error_type = "internal_error"
@@ -1752,9 +1648,7 @@ class LLMRails:
                         action_params=action_params,
                     )
 
-                    result = await self.runtime.action_dispatcher.execute_action(
-                        action_name, params
-                    )
+                    result = await self.runtime.action_dispatcher.execute_action(action_name, params)
                     self.explain_info = self._ensure_explain_info()
 
                     action_func = self.runtime.action_dispatcher.get_action(action_name)

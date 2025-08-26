@@ -86,9 +86,7 @@ class TestLLMIsolationE2E:
         not os.getenv("OPENAI_API_KEY"),
         reason="OpenAI API key not available for e2e testing",
     )
-    async def test_parameter_isolation_in_streaming_no_contamination(
-        self, test_config_path
-    ):
+    async def test_parameter_isolation_in_streaming_no_contamination(self, test_config_path):
         """Test that parameter modifications in actions don't contaminate main LLM.
 
         This is the main test that verifies the fix for the max_tokens contamination bug.
@@ -107,9 +105,7 @@ class TestLLMIsolationE2E:
                 "when": when,
                 "max_tokens_attr": getattr(rails.llm, "max_tokens", None),
                 "model_kwargs": getattr(rails.llm, "model_kwargs", {}).copy(),
-                "max_tokens_in_kwargs": getattr(rails.llm, "model_kwargs", {}).get(
-                    "max_tokens", "NOT_SET"
-                ),
+                "max_tokens_in_kwargs": getattr(rails.llm, "model_kwargs", {}).get("max_tokens", "NOT_SET"),
             }
             llm_states.append(state)
             return state
@@ -162,9 +158,7 @@ class TestLLMIsolationE2E:
                         }
                     )
 
-        assert (
-            not contamination_detected
-        ), f"Parameter contamination detected in LLM states: {contaminated_states}"
+        assert not contamination_detected, f"Parameter contamination detected in LLM states: {contaminated_states}"
 
         assert len(truncated_responses) == 0, (
             f"Found {len(truncated_responses)} truncated responses: {truncated_responses}. "
@@ -173,14 +167,10 @@ class TestLLMIsolationE2E:
 
         # verify we got reasonable responses
         valid_responses = [r for r in responses if r and not r.startswith("Error:")]
-        assert (
-            len(valid_responses) >= 2
-        ), f"Too many API errors, can't verify isolation. Responses: {responses}"
+        assert len(valid_responses) >= 2, f"Too many API errors, can't verify isolation. Responses: {responses}"
 
     @pytest.mark.asyncio
-    async def test_isolated_llm_registration_during_initialization(
-        self, test_config_path
-    ):
+    async def test_isolated_llm_registration_during_initialization(self, test_config_path):
         """Test that isolated LLMs are properly registered during initialization."""
 
         config = RailsConfig.from_path(test_config_path)
@@ -190,36 +180,26 @@ class TestLLMIsolationE2E:
 
         assert "llm" in registered_params, "Main LLM not registered"
 
-        isolated_llm_params = [
-            key
-            for key in registered_params.keys()
-            if key.endswith("_llm") and key != "llm"
-        ]
+        isolated_llm_params = [key for key in registered_params.keys() if key.endswith("_llm") and key != "llm"]
 
-        assert (
-            len(isolated_llm_params) > 0
-        ), f"No isolated LLMs were created. Registered params: {list(registered_params.keys())}"
+        assert len(isolated_llm_params) > 0, (
+            f"No isolated LLMs were created. Registered params: {list(registered_params.keys())}"
+        )
 
         # verify isolated LLMs are different instances from main LLM
         main_llm = registered_params["llm"]
         for param_name in isolated_llm_params:
             isolated_llm = registered_params[param_name]
-            assert (
-                isolated_llm is not main_llm
-            ), f"Isolated LLM '{param_name}' is the same instance as main LLM"
+            assert isolated_llm is not main_llm, f"Isolated LLM '{param_name}' is the same instance as main LLM"
 
             # verify model_kwargs are isolated (different dict instances)
-            if hasattr(isolated_llm, "model_kwargs") and hasattr(
-                main_llm, "model_kwargs"
-            ):
-                assert (
-                    isolated_llm.model_kwargs is not main_llm.model_kwargs
-                ), f"Isolated LLM '{param_name}' shares model_kwargs dict with main LLM"
+            if hasattr(isolated_llm, "model_kwargs") and hasattr(main_llm, "model_kwargs"):
+                assert isolated_llm.model_kwargs is not main_llm.model_kwargs, (
+                    f"Isolated LLM '{param_name}' shares model_kwargs dict with main LLM"
+                )
 
     @pytest.mark.asyncio
-    async def test_concurrent_action_execution_with_different_parameters(
-        self, test_config_path
-    ):
+    async def test_concurrent_action_execution_with_different_parameters(self, test_config_path):
         """Test that concurrent actions with different parameters don't interfere."""
 
         config = RailsConfig.from_path(test_config_path)
@@ -241,11 +221,7 @@ class TestLLMIsolationE2E:
 
             # simulate different actions that would modify LLM parameters
             for i in range(3):
-                task = asyncio.create_task(
-                    self._simulate_action_with_llm_params(
-                        rails, f"action_{i}", i * 10 + 3
-                    )
-                )
+                task = asyncio.create_task(self._simulate_action_with_llm_params(rails, f"action_{i}", i * 10 + 3))
                 tasks.append(task)
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -261,13 +237,10 @@ class TestLLMIsolationE2E:
         }
 
         assert original_llm_state == final_llm_state, (
-            f"Main LLM state changed after concurrent actions. "
-            f"Original: {original_llm_state}, Final: {final_llm_state}"
+            f"Main LLM state changed after concurrent actions. Original: {original_llm_state}, Final: {final_llm_state}"
         )
 
-    async def _simulate_action_with_llm_params(
-        self, rails, action_name: str, max_tokens: int
-    ):
+    async def _simulate_action_with_llm_params(self, rails, action_name: str, max_tokens: int):
         """Simulate action that uses llm_params context manager."""
         from nemoguardrails.llm.params import llm_params
 
@@ -294,9 +267,7 @@ class TestLLMIsolationE2E:
         rails = LLMRails(config, verbose=False)
 
         isolated_llm_params = [
-            key
-            for key in rails.runtime.registered_action_params.keys()
-            if key.endswith("_llm") and key != "llm"
+            key for key in rails.runtime.registered_action_params.keys() if key.endswith("_llm") and key != "llm"
         ]
 
         if not isolated_llm_params:
@@ -306,32 +277,22 @@ class TestLLMIsolationE2E:
         isolated_llm = rails.runtime.registered_action_params[isolated_llm_params[0]]
 
         if hasattr(main_llm, "client"):
-            assert hasattr(
-                isolated_llm, "client"
-            ), "HTTP client not preserved in isolated LLM"
-            assert (
-                isolated_llm.client is main_llm.client
-            ), "HTTP client should be shared (shallow copy)"
+            assert hasattr(isolated_llm, "client"), "HTTP client not preserved in isolated LLM"
+            assert isolated_llm.client is main_llm.client, "HTTP client should be shared (shallow copy)"
 
         if hasattr(main_llm, "api_key"):
-            assert hasattr(
-                isolated_llm, "api_key"
-            ), "API key not preserved in isolated LLM"
-            assert (
-                isolated_llm.api_key == main_llm.api_key
-            ), "API key should be preserved"
+            assert hasattr(isolated_llm, "api_key"), "API key not preserved in isolated LLM"
+            assert isolated_llm.api_key == main_llm.api_key, "API key should be preserved"
 
         # model_kwargs should be isolated (deep copy of this specific dict)
         if hasattr(main_llm, "model_kwargs") and hasattr(isolated_llm, "model_kwargs"):
-            assert (
-                isolated_llm.model_kwargs is not main_llm.model_kwargs
-            ), "model_kwargs should be isolated between LLM instances"
+            assert isolated_llm.model_kwargs is not main_llm.model_kwargs, (
+                "model_kwargs should be isolated between LLM instances"
+            )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("iterations", [1, 3, 5])
-    async def test_parameter_isolation_multiple_iterations(
-        self, test_config_path, iterations
-    ):
+    async def test_parameter_isolation_multiple_iterations(self, test_config_path, iterations):
         """Test parameter isolation across different numbers of iterations."""
 
         config = RailsConfig.from_path(test_config_path)
@@ -344,9 +305,7 @@ class TestLLMIsolationE2E:
             # LLM state before call
             _pre_state = {
                 "max_tokens": getattr(rails.llm, "max_tokens", None),
-                "model_kwargs_max_tokens": getattr(rails.llm, "model_kwargs", {}).get(
-                    "max_tokens", "NOT_SET"
-                ),
+                "model_kwargs_max_tokens": getattr(rails.llm, "model_kwargs", {}).get("max_tokens", "NOT_SET"),
             }
 
             try:
@@ -360,26 +319,17 @@ class TestLLMIsolationE2E:
             # check LLM state after call
             post_state = {
                 "max_tokens": getattr(rails.llm, "max_tokens", None),
-                "model_kwargs_max_tokens": getattr(rails.llm, "model_kwargs", {}).get(
-                    "max_tokens", "NOT_SET"
-                ),
+                "model_kwargs_max_tokens": getattr(rails.llm, "model_kwargs", {}).get("max_tokens", "NOT_SET"),
             }
 
             # check for contamination
-            if (
-                post_state["max_tokens"] == 3
-                or post_state["model_kwargs_max_tokens"] == 3
-            ):
+            if post_state["max_tokens"] == 3 or post_state["model_kwargs_max_tokens"] == 3:
                 contamination_detected = True
                 break
 
-        assert (
-            not contamination_detected
-        ), f"Parameter contamination detected after {iterations} iterations"
+        assert not contamination_detected, f"Parameter contamination detected after {iterations} iterations"
 
-        assert (
-            len(responses) == iterations
-        ), f"Expected {iterations} responses, got {len(responses)}"
+        assert len(responses) == iterations, f"Expected {iterations} responses, got {len(responses)}"
 
 
 @pytest.mark.skipif(
@@ -434,9 +384,7 @@ class TestLLMIsolationErrorHandling:
             assert "content_safety_llm" in rails.runtime.registered_action_params
 
             main_llm = rails.runtime.registered_action_params["llm"]
-            content_safety_llm = rails.runtime.registered_action_params[
-                "content_safety_llm"
-            ]
+            content_safety_llm = rails.runtime.registered_action_params["content_safety_llm"]
             assert main_llm is not content_safety_llm
 
 
@@ -469,9 +417,7 @@ async def run_parameter_contamination_test():
         config_path = Path(temp_dir) / "config.yml"
         config_path.write_text(test_config)
 
-        await test_instance.test_parameter_isolation_in_streaming_no_contamination(
-            temp_dir
-        )
+        await test_instance.test_parameter_isolation_in_streaming_no_contamination(temp_dir)
 
 
 @pytest.mark.skipif(
@@ -491,22 +437,16 @@ class TestLLMIsolationConfiguredActionsOnly:
             return LLMRails(config, verbose=False)
 
     @staticmethod
-    def _get_isolated_llm_params(
-        rails: LLMRails, exclude_specialized: bool = False
-    ) -> list:
+    def _get_isolated_llm_params(rails: LLMRails, exclude_specialized: bool = False) -> list:
         """Helper to get isolated LLM parameters from rails instance."""
         registered_params = rails.runtime.registered_action_params
         isolated_llm_params = [
-            key
-            for key in registered_params.keys()
-            if key.endswith("_llm") and key != "llm" and key != "llms"
+            key for key in registered_params.keys() if key.endswith("_llm") and key != "llm" and key != "llms"
         ]
 
         if exclude_specialized:
             specialized_llms = ["content_safety_llm", "topic_safety_llm"]
-            isolated_llm_params = [
-                param for param in isolated_llm_params if param not in specialized_llms
-            ]
+            isolated_llm_params = [param for param in isolated_llm_params if param not in specialized_llms]
 
         return isolated_llm_params
 
@@ -554,13 +494,9 @@ class TestLLMIsolationConfiguredActionsOnly:
         """
 
         rails = self._create_rails_with_config(config_content)
-        isolated_llm_params = self._get_isolated_llm_params(
-            rails, exclude_specialized=True
-        )
+        isolated_llm_params = self._get_isolated_llm_params(rails, exclude_specialized=True)
 
-        assert (
-            len(isolated_llm_params) == 0
-        ), f"Unexpected isolated LLMs created: {isolated_llm_params}"
+        assert len(isolated_llm_params) == 0, f"Unexpected isolated LLMs created: {isolated_llm_params}"
 
     def test_empty_rails_flows_creates_no_isolated_llms(self):
         """Test that empty rails flows list creates no isolated LLMs."""
@@ -578,13 +514,9 @@ class TestLLMIsolationConfiguredActionsOnly:
         """
 
         rails = self._create_rails_with_config(config_content)
-        isolated_llm_params = self._get_isolated_llm_params(
-            rails, exclude_specialized=True
-        )
+        isolated_llm_params = self._get_isolated_llm_params(rails, exclude_specialized=True)
 
-        assert (
-            len(isolated_llm_params) == 0
-        ), f"Unexpected isolated LLMs created: {isolated_llm_params}"
+        assert len(isolated_llm_params) == 0, f"Unexpected isolated LLMs created: {isolated_llm_params}"
 
     def test_non_llm_requiring_actions_dont_get_isolated_llms(self):
         """Test that even valid flows don't get isolated LLMs if actions don't require LLMs."""
@@ -599,9 +531,7 @@ class TestLLMIsolationConfiguredActionsOnly:
 
         # retrieve_relevant_chunks action exists but doesn't require LLM
         # so it should never get an isolated LLM even if it were configured
-        assert (
-            "retrieve_relevant_chunks_llm" not in rails.runtime.registered_action_params
-        )
+        assert "retrieve_relevant_chunks_llm" not in rails.runtime.registered_action_params
 
 
 if __name__ == "__main__":

@@ -47,9 +47,7 @@ class TestJailbreakRequestChanges:
 
         for base_url, path, expected_url in test_cases:
             result = urljoin(base_url, path)
-            assert (
-                result == expected_url
-            ), f"urljoin({base_url}, {path}) should equal {expected_url}"
+            assert result == expected_url, f"urljoin({base_url}, {path}) should equal {expected_url}"
 
     def test_auth_header_logic(self):
         """Test the authorization header logic."""

@@ -77,17 +77,12 @@ async def test_generate_async_trace_with_messages_and_options():
     reasoning_trace_var.set("<think> yet another COT </think>")
 
     options = GenerationOptions()
-    result = await chat.app.generate_async(
-        messages=[{"role": "user", "content": "hi"}], options=options
-    )
+    result = await chat.app.generate_async(messages=[{"role": "user", "content": "hi"}], options=options)
 
     assert isinstance(result, GenerationResponse)
     assert isinstance(result.response, list)
     assert len(result.response) == 1
-    assert (
-        result.response[0]["content"]
-        == "<think> yet another COT </think>Hello! How can I assist you today?"
-    )
+    assert result.response[0]["content"] == "<think> yet another COT </think>Hello! How can I assist you today?"
     assert reasoning_trace_var.get() is None
 
 
@@ -131,10 +126,7 @@ async def test_generate_async_trace_with_prompt_and_options():
 
     assert isinstance(result, GenerationResponse)
     assert isinstance(result.response, str)
-    assert (
-        result.response
-        == "<think> yet another COT </think>Hello! How can I assist you today?"
-    )
+    assert result.response == "<think> yet another COT </think>Hello! How can I assist you today?"
     assert reasoning_trace_var.get() is None
 
 
@@ -177,10 +169,7 @@ async def test_generate_async_trace_messages_only():
 
     assert isinstance(result, dict)
     assert result.get("role") == "assistant"
-    assert (
-        result.get("content")
-        == "<think> yet another COT </think>Hello! How can I assist you today?"
-    )
+    assert result.get("content") == "<think> yet another COT </think>Hello! How can I assist you today?"
     assert reasoning_trace_var.get() is None
 
 
@@ -221,7 +210,5 @@ async def test_generate_async_trace_with_prompt_only():
 
     result = await chat.app.generate_async(prompt="hi")
 
-    assert (
-        result == "<think> yet another COT </think>Hello! How can I assist you today?"
-    )
+    assert result == "<think> yet another COT </think>Hello! How can I assist you today?"
     assert reasoning_trace_var.get() is None

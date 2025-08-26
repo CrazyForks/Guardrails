@@ -51,9 +51,7 @@ async def check_sensitive_info(context: Dict[str, Any]) -> bool:
     response = context.get("bot_message", "")
     prompt = context.get("user_message", "")
     input_text = response or prompt
-    return "credit card" in input_text.lower() or any(
-        c.isdigit() for c in input_text if c.isdigit() or c == "-"
-    )
+    return "credit card" in input_text.lower() or any(c.isdigit() for c in input_text if c.isdigit() or c == "-")
 
 
 async def check_think_tag_present(context: Dict[str, Any]) -> bool:
@@ -146,18 +144,12 @@ async def test_output_rails_reasoning_traces_configuration(
        - No error message will be shown because it is not there to get blocked
 
     """
-    base_config.models[
-        0
-    ].reasoning_config.remove_reasoning_traces = test_case.remove_reasoning_traces
-    base_config.rails.output.apply_to_reasoning_traces = (
-        test_case.apply_to_reasoning_traces
-    )
+    base_config.models[0].reasoning_config.remove_reasoning_traces = test_case.remove_reasoning_traces
+    base_config.rails.output.apply_to_reasoning_traces = test_case.apply_to_reasoning_traces
 
     chat = TestChat(
         base_config,
-        llm_completions=[
-            "<think> I should think more </think> Your kindness is appreciated"
-        ],
+        llm_completions=["<think> I should think more </think> Your kindness is appreciated"],
     )
 
     chat.app.runtime.register_action(check_think_tag_present)
@@ -166,22 +158,14 @@ async def test_output_rails_reasoning_traces_configuration(
     response = await chat.app.generate_async(messages=messages)
 
     if test_case.expected_think_tag:
-        assert (
-            "<think>" in response["content"]
-        ), "Think tag should be present in response"
+        assert "<think>" in response["content"], "Think tag should be present in response"
     else:
-        assert (
-            "<think>" not in response["content"]
-        ), "Think tag should not be present in response"
+        assert "<think>" not in response["content"], "Think tag should not be present in response"
 
     if test_case.expected_error_message:
-        assert (
-            "think tag is not allowed" in response["content"]
-        ), "Error message should be present"
+        assert "think tag is not allowed" in response["content"], "Error message should be present"
     else:
-        assert (
-            "think tag is not allowed" not in response["content"]
-        ), "Error message should not be present"
+        assert "think tag is not allowed" not in response["content"], "Error message should not be present"
 
 
 @pytest.mark.asyncio
@@ -226,12 +210,8 @@ async def test_output_rails_preserves_reasoning_traces() -> None:
     response = await chat.app.generate_async(messages=messages)
 
     assert "<think>" in response["content"], "Reasoning traces should be preserved"
-    assert (
-        "I should not share sensitive info" in response["content"]
-    ), "Reasoning content should be preserved"
-    assert (
-        "credit card" not in response["content"].lower()
-    ), "Sensitive information should be removed"
+    assert "I should not share sensitive info" in response["content"], "Reasoning content should be preserved"
+    assert "credit card" not in response["content"].lower(), "Sensitive information should be removed"
 
 
 @pytest.mark.asyncio
@@ -291,22 +271,15 @@ async def test_output_rails_without_reasoning_traces() -> None:
     response = await chat.app.generate_async(messages=messages)
 
     assert "<think>" not in response["content"], "Think tag should not be present"
-    assert (
-        "I should not share sensitive info" not in response["content"]
-    ), "Reasoning content should not be present"
-    assert (
-        response["content"] == "I cannot share sensitive information."
-    ), "Should return sanitized response"
+    assert "I should not share sensitive info" not in response["content"], "Reasoning content should not be present"
+    assert response["content"] == "I cannot share sensitive information.", "Should return sanitized response"
 
     # case 2: Think tag is preserved but content is sanitized
     messages = [{"role": "user", "content": "Tell me some numbers"}]
     response = await chat.app.generate_async(messages=messages)
 
     assert "<think>" in response["content"], "Think tag should be present"
-    assert (
-        "I should not share sensitive info" not in response["content"]
-    ), "Reasoning content should not be present"
-    assert (
-        response["content"]
-        == "<think> I should think more </think>I cannot share sensitive information."
-    ), "Should preserve think tag but sanitize content"
+    assert "I should not share sensitive info" not in response["content"], "Reasoning content should not be present"
+    assert response["content"] == "<think> I should think more </think>I cannot share sensitive information.", (
+        "Should preserve think tag but sanitize content"
+    )

@@ -143,15 +143,10 @@ def test_reasoning_traces_with_explicit_dialog_rails():
             """,
         )
 
-    assert "Main model has reasoning traces enabled in config.yml" in str(
+    assert "Main model has reasoning traces enabled in config.yml" in str(exc_info.value)
+    assert "Reasoning traces must be disabled when dialog rails are present" in str(exc_info.value)
+    assert "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config" in str(
         exc_info.value
-    )
-    assert "Reasoning traces must be disabled when dialog rails are present" in str(
-        exc_info.value
-    )
-    assert (
-        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config"
-        in str(exc_info.value)
     )
 
 
@@ -266,15 +261,10 @@ def test_reasoning_traces_with_implicit_dialog_rails_user_bot_messages():
             """,
         )
 
-    assert "Main model has reasoning traces enabled in config.yml" in str(
+    assert "Main model has reasoning traces enabled in config.yml" in str(exc_info.value)
+    assert "Reasoning traces must be disabled when dialog rails are present" in str(exc_info.value)
+    assert "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config" in str(
         exc_info.value
-    )
-    assert "Reasoning traces must be disabled when dialog rails are present" in str(
-        exc_info.value
-    )
-    assert (
-        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config"
-        in str(exc_info.value)
     )
 
 
@@ -302,15 +292,10 @@ def test_reasoning_traces_with_implicit_dialog_rails_flows_only():
             """,
         )
 
-    assert "Main model has reasoning traces enabled in config.yml" in str(
+    assert "Main model has reasoning traces enabled in config.yml" in str(exc_info.value)
+    assert "Reasoning traces must be disabled when dialog rails are present" in str(exc_info.value)
+    assert "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config" in str(
         exc_info.value
-    )
-    assert "Reasoning traces must be disabled when dialog rails are present" in str(
-        exc_info.value
-    )
-    assert (
-        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config"
-        in str(exc_info.value)
     )
 
 
@@ -334,9 +319,7 @@ def test_reasoning_traces_with_implicit_dialog_rails_user_messages_only():
             """,
         )
 
-    assert "Reasoning traces must be disabled when dialog rails are present" in str(
-        exc_info.value
-    )
+    assert "Reasoning traces must be disabled when dialog rails are present" in str(exc_info.value)
 
 
 def test_reasoning_traces_with_bot_messages_only():
@@ -358,9 +341,7 @@ def test_reasoning_traces_with_bot_messages_only():
             """,
         )
 
-    assert "Reasoning traces must be disabled when dialog rails are present" in str(
-        exc_info.value
-    )
+    assert "Reasoning traces must be disabled when dialog rails are present" in str(exc_info.value)
 
 
 def test_reasoning_traces_with_dedicated_task_models():
@@ -390,16 +371,10 @@ def test_reasoning_traces_with_dedicated_task_models():
             """,
         )
 
-    assert (
-        "Model 'generate_user_intent' has reasoning traces enabled in config.yml"
-        in str(exc_info.value)
-    )
-    assert "Reasoning traces must be disabled for dialog rail tasks" in str(
+    assert "Model 'generate_user_intent' has reasoning traces enabled in config.yml" in str(exc_info.value)
+    assert "Reasoning traces must be disabled for dialog rail tasks" in str(exc_info.value)
+    assert "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config" in str(
         exc_info.value
-    )
-    assert (
-        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config"
-        in str(exc_info.value)
     )
 
 
@@ -430,16 +405,10 @@ def test_reasoning_traces_with_mixed_task_models():
             """,
         )
 
-    assert (
-        "Model 'generate_user_intent' has reasoning traces enabled in config.yml"
-        in str(exc_info.value)
-    )
-    assert "Reasoning traces must be disabled for dialog rail tasks" in str(
+    assert "Model 'generate_user_intent' has reasoning traces enabled in config.yml" in str(exc_info.value)
+    assert "Reasoning traces must be disabled for dialog rail tasks" in str(exc_info.value)
+    assert "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config" in str(
         exc_info.value
-    )
-    assert (
-        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config"
-        in str(exc_info.value)
     )
 
 
@@ -477,18 +446,11 @@ def test_reasoning_traces_with_all_dialog_tasks():
         )
 
     error_message = str(exc_info.value)
-    assert (
-        "Model 'generate_bot_message' has reasoning traces enabled in config.yml"
-        not in error_message
-    )
-    assert (
-        "Model 'generate_next_steps' has reasoning traces enabled in config.yml"
-        in error_message
-    )
+    assert "Model 'generate_bot_message' has reasoning traces enabled in config.yml" not in error_message
+    assert "Model 'generate_next_steps' has reasoning traces enabled in config.yml" in error_message
     assert "Reasoning traces must be disabled for dialog rail tasks" in error_message
     assert (
-        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config"
-        in error_message
+        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config" in error_message
     )
 
 
@@ -545,16 +507,10 @@ def test_reasoning_traces_with_implicit_dialog_rails_and_dedicated_models():
             """,
         )
 
-    assert (
-        "Model 'generate_user_intent' has reasoning traces enabled in config.yml"
-        in str(exc_info.value)
-    )
-    assert "Reasoning traces must be disabled for dialog rail tasks" in str(
+    assert "Model 'generate_user_intent' has reasoning traces enabled in config.yml" in str(exc_info.value)
+    assert "Reasoning traces must be disabled for dialog rail tasks" in str(exc_info.value)
+    assert "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config" in str(
         exc_info.value
-    )
-    assert (
-        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config"
-        in str(exc_info.value)
     )
 
 
@@ -580,15 +536,10 @@ def test_reasoning_traces_with_partial_dedicated_models():
             """,
         )
 
-    assert "Main model has reasoning traces enabled in config.yml" in str(
+    assert "Main model has reasoning traces enabled in config.yml" in str(exc_info.value)
+    assert "Reasoning traces must be disabled when dialog rails are present" in str(exc_info.value)
+    assert "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config" in str(
         exc_info.value
-    )
-    assert "Reasoning traces must be disabled when dialog rails are present" in str(
-        exc_info.value
-    )
-    assert (
-        "Please update your config.yml to set 'remove_reasoning_traces: true' under reasoning_config"
-        in str(exc_info.value)
     )
 
 

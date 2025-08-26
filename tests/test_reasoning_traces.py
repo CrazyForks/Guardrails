@@ -79,9 +79,7 @@ class TestReasoningTraces:
 
     def test_remove_reasoning_traces_nested(self):
         """Test handling of nested reasoning trace markers (should be handled correctly)."""
-        input_text = (
-            "Begin <thinking>Outer <thinking>Inner</thinking> Outer</thinking> End."
-        )
+        input_text = "Begin <thinking>Outer <thinking>Inner</thinking> Outer</thinking> End."
         expected = "Begin  End."
         result = extract_and_strip_trace(input_text, "<thinking>", "</thinking>")
         assert result.text == expected
@@ -116,9 +114,7 @@ class TestReasoningTraces:
         # mock the get_prompt and get_task_model functions
         with (
             patch("nemoguardrails.llm.taskmanager.get_prompt") as mock_get_prompt,
-            patch(
-                "nemoguardrails.llm.taskmanager.get_task_model"
-            ) as mock_get_task_model,
+            patch("nemoguardrails.llm.taskmanager.get_task_model") as mock_get_task_model,
         ):
             # Configure the mocks
             mock_get_prompt.return_value = MagicMock(output_parser=None)
@@ -127,9 +123,7 @@ class TestReasoningTraces:
             llm_task_manager = LLMTaskManager(config)
 
             # test parsing with reasoning traces
-            input_text = (
-                "This is a <thinking>Some reasoning here</thinking> final answer."
-            )
+            input_text = "This is a <thinking>Some reasoning here</thinking> final answer."
             expected = "This is a  final answer."
 
             result = llm_task_manager.parse_task_output(Task.GENERAL, input_text)
@@ -147,9 +141,7 @@ class TestReasoningTraces:
         # Mock the get_prompt and get_task_model functions
         with (
             patch("nemoguardrails.llm.taskmanager.get_prompt") as mock_get_prompt,
-            patch(
-                "nemoguardrails.llm.taskmanager.get_task_model"
-            ) as mock_get_task_model,
+            patch("nemoguardrails.llm.taskmanager.get_task_model") as mock_get_task_model,
         ):
             mock_get_prompt.return_value = MagicMock(output_parser=None)
             mock_get_task_model.return_value = model_config
@@ -157,9 +149,7 @@ class TestReasoningTraces:
             llm_task_manager = LLMTaskManager(config)
 
             # test parsing without a reasoning config
-            input_text = (
-                "This is a <thinking>Some reasoning here</thinking> final answer."
-            )
+            input_text = "This is a <thinking>Some reasoning here</thinking> final answer."
             result = llm_task_manager.parse_task_output(Task.GENERAL, input_text)
             assert result.text == input_text
 
@@ -180,9 +170,7 @@ class TestReasoningTraces:
         # Mock the get_prompt and get_task_model functions
         with (
             patch("nemoguardrails.llm.taskmanager.get_prompt") as mock_get_prompt,
-            patch(
-                "nemoguardrails.llm.taskmanager.get_task_model"
-            ) as mock_get_task_model,
+            patch("nemoguardrails.llm.taskmanager.get_task_model") as mock_get_task_model,
         ):
             mock_get_prompt.return_value = MagicMock(output_parser=None)
             mock_get_task_model.return_value = model_config
@@ -218,9 +206,7 @@ class TestReasoningTraces:
         # Mock the get_prompt and get_task_model functions
         with (
             patch("nemoguardrails.llm.taskmanager.get_prompt") as mock_get_prompt,
-            patch(
-                "nemoguardrails.llm.taskmanager.get_task_model"
-            ) as mock_get_task_model,
+            patch("nemoguardrails.llm.taskmanager.get_task_model") as mock_get_task_model,
         ):
             mock_get_prompt.return_value = MagicMock(output_parser="mock_parser")
             mock_get_task_model.return_value = model_config
@@ -229,9 +215,7 @@ class TestReasoningTraces:
             llm_task_manager.output_parsers["mock_parser"] = mock_parser
 
             # test parsing with an output parser
-            input_text = (
-                "This is a <thinking>Some reasoning here</thinking> final answer."
-            )
+            input_text = "This is a <thinking>Some reasoning here</thinking> final answer."
             result = llm_task_manager.parse_task_output(Task.GENERAL, input_text)
             assert result.text == "PARSED: This is a  final answer."
 
@@ -259,17 +243,13 @@ class TestReasoningTraces:
         llm_task_manager = MagicMock(spec=LLMTaskManager)
 
         # set up the mocked LLM to return text with reasoning traces
-        llm.return_value = (
-            "This is a <thinking>Some reasoning here</thinking> final answer."
-        )
+        llm.return_value = "This is a <thinking>Some reasoning here</thinking> final answer."
 
         # set up the mock llm_task_manager to properly process the output
         llm_task_manager.parse_task_output.return_value = "This is a final answer."
 
         # mock init method to avoid async initialization
-        with patch.object(
-            LLMGenerationActionsV2dotx, "init", AsyncMock(return_value=None)
-        ):
+        with patch.object(LLMGenerationActionsV2dotx, "init", AsyncMock(return_value=None)):
             # create LLMGenerationActionsV2dotx with our mocks
             action_generator = LLMGenerationActionsV2dotx(
                 config=config,
@@ -294,9 +274,7 @@ class TestReasoningTraces:
 
         llm.assert_called_once()
 
-        llm_task_manager.parse_task_output.assert_called_once_with(
-            Task.GENERAL, output=llm.return_value
-        )
+        llm_task_manager.parse_task_output.assert_called_once_with(Task.GENERAL, output=llm.return_value)
 
         # verify the result has reasoning traces removed
         assert result == "This is a final answer."
@@ -320,9 +298,7 @@ class TestReasoningTraces:
         llm_task_manager = MagicMock(spec=LLMTaskManager)
 
         # set up the mocked LLM to return text with reasoning traces
-        llm.return_value = (
-            "This is a <thinking>Some reasoning here</thinking> final answer."
-        )
+        llm.return_value = "This is a <thinking>Some reasoning here</thinking> final answer."
 
         llm_task_manager.parse_task_output.return_value = "This is a final answer."
 
@@ -365,9 +341,7 @@ class TestReasoningTraces:
 
         llm.assert_called_once()
 
-        llm_task_manager.parse_task_output.assert_called_once_with(
-            Task.GENERAL, output=llm.return_value
-        )
+        llm_task_manager.parse_task_output.assert_called_once_with(Task.GENERAL, output=llm.return_value)
 
         assert mock_result.events[0]["text"] == "This is a final answer."
 
@@ -446,6 +420,4 @@ class TestGuardrailReasoningTraces:
                     found_expected_warning = True
                     break
 
-            assert (
-                found_expected_warning
-            ), "Expected DeprecationWarning for remove_thinking_traces was not issued."
+            assert found_expected_warning, "Expected DeprecationWarning for remove_thinking_traces was not issued."
