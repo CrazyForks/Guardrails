@@ -224,9 +224,14 @@ def json_to_state(s: str) -> State:
     data = json.loads(s)
     state = decode_from_dict(data, refs={})
 
+    # Ensure we have a State object
+    if not isinstance(state, State):
+        raise ValueError("Decoded object is not a State instance")
+
     # Redo the callbacks.
     for flow_uid, flow_state in state.flow_states.items():
         for head_id, head in flow_state.heads.items():
+            # The partial creates a callback that expects just the head parameter
             head.position_changed_callback = partial(
                 _flow_head_changed, state, flow_state
             )

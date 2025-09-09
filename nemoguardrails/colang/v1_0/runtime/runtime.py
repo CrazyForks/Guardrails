@@ -716,7 +716,8 @@ class RuntimeV1_0(Runtime):
         if isinstance(result, ActionResult):
             return_value = result.return_value
             return_events = result.events
-            context_updates.update(result.context_updates)
+            if result.context_updates is not None:
+                context_updates.update(result.context_updates)
 
         # If we have an action result key, we also record the update.
         if action_result_key:
@@ -794,10 +795,17 @@ class RuntimeV1_0(Runtime):
                             )
                     except Exception as e:
                         log.info(f"Exception {e} while making request to {action_name}")
+                        if not isinstance(result, dict):
+                            result = {"value": result}
                         return result, status
 
         except Exception as e:
             log.info(f"Failed to get response from {action_name} due to exception {e}")
+
+        # Ensure result is a dict as expected by the return type
+        if not isinstance(result, dict):
+            result = {"value": result}
+
         return result, status
 
     async def _process_start_flow(

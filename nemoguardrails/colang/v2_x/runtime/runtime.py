@@ -45,7 +45,8 @@ from nemoguardrails.colang.v2_x.runtime.statemachine import (
 from nemoguardrails.rails.llm.config import RailsConfig
 from nemoguardrails.utils import new_event_dict, new_readable_uuid
 
-langchain.debug = False
+if hasattr(langchain, "debug"):
+    langchain.debug = False  # pyright: ignore
 
 log = logging.getLogger(__name__)
 
@@ -147,9 +148,13 @@ class RuntimeV2_x(Runtime):
 
     def _init_flow_configs(self) -> None:
         """Initializes the flow configs based on the config."""
-        self.flow_configs = create_flow_configs_from_flow_list(self.config.flows)
+        # Type cast to satisfy the type checker - the function handles dicts internally
+        flows = self.config.flows  # type: ignore
+        self.flow_configs = create_flow_configs_from_flow_list(flows)  # type: ignore
 
-    async def generate_events(self, events: List[dict]) -> List[dict]:
+    async def generate_events(
+        self, events: List[dict], processing_log: Optional[List[dict]] = None
+    ) -> List[dict]:
         raise NotImplementedError("Stateless API not supported for Colang 2.x, yet.")
 
     @staticmethod
@@ -271,7 +276,7 @@ class RuntimeV2_x(Runtime):
                     "I'm sorry, an internal error has occurred."
                 )
 
-        return_value = result
+        return_value: Any = result
         return_events: List[dict] = []
         context_updates: dict = {}
 
@@ -317,10 +322,10 @@ class RuntimeV2_x(Runtime):
                                     f"Got status code {resp.status} while getting response from {action_name}"
                                 )
 
-                            resp = await resp.json()
+                            response_data = await resp.json()
                             result, status = (
-                                resp.get("result", result),
-                                resp.get("status", status),
+                                response_data.get("result", result),
+                                response_data.get("status", status),
                             )
                     except Exception as e:
                         log.info(
@@ -385,12 +390,14 @@ class RuntimeV2_x(Runtime):
                     "Local action finished with an exception!",
                     exc_info=True,
                 )
+                result = None  # Set a default value for failed actions
 
             self.async_actions[main_flow_uid].remove(finished_task)
 
             # We need to create the corresponding action finished event
-            action_finished_event = self._get_action_finished_event(result)
-            action_finished_events.append(action_finished_event)
+            if result is not None:
+                action_finished_event = self._get_action_finished_event(result)
+                action_finished_events.append(action_finished_event)
 
         return action_finished_events, len(pending)
 
@@ -429,8 +436,8 @@ class RuntimeV2_x(Runtime):
               state.
         """
 
-        output_events = []
-        input_events: List[Union[dict, InternalEvent]] = events.copy()
+        output_events: List[dict] = []
+        input_events: List[Union[dict, InternalEvent]] = list(events)
         local_running_actions: List[asyncio.Task[dict]] = []
 
         if state is None or state == {}:
@@ -683,11 +690,14 @@ class RuntimeV2_x(Runtime):
             k: v for k, v in start_action_event.items() if k not in ignore_keys
         }
 
+        # Filter events_history to only include dicts
+        dict_events = [event for event in events_history if isinstance(event, dict)]
+
         return_value, new_events, context_updates = await self._process_start_action(
             action_name,
             action_params=action_params,
             context=state.context,
-            events=events_history,
+            events=dict_events,
             state=state,
         )
 
@@ -737,7 +747,7 @@ def create_flow_configs_from_flow_list(flows: List[Flow]) -> Dict[str, FlowConfi
 
         config = FlowConfig(
             id=flow.name,
-            elements=flow.elements,
+            elements=list(flow.elements),  # Type cast to ensure compatibility
             decorators=convert_decorator_list_to_dictionary(flow.decorators),
             parameters=flow.parameters,
             return_members=flow.return_members,

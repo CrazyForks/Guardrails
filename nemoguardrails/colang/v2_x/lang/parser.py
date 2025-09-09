@@ -19,6 +19,7 @@ import re
 import textwrap
 
 import yaml
+from lark import ParseTree
 
 from nemoguardrails.colang.v2_x.lang.colang_ast import Flow, Import
 from nemoguardrails.colang.v2_x.lang.grammar.load import load_lark_parser
@@ -40,7 +41,7 @@ class ColangParser:
         # Initialize the Lark Parser
         self._lark_parser = load_lark_parser(self.grammar_path)
 
-    def get_parsing_tree(self, content: str) -> dict:
+    def get_parsing_tree(self, content: str) -> ParseTree:
         """Helper to get only the parsing tree.
 
         Args:
@@ -141,9 +142,10 @@ class ColangParser:
                         result["import_paths"].append(import_el.path)
                     else:
                         # If we have a package name, we need to translate it to a path
-                        result["import_paths"].append(
-                            os.path.join(*import_el.package.split("."))
-                        )
+                        if import_el.package:
+                            result["import_paths"].append(
+                                os.path.join(*import_el.package.split("."))
+                            )
 
         return result
 

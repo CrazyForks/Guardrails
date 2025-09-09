@@ -19,10 +19,14 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from time import time
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from nemoguardrails.rails.llm.config import RailsConfig
 
 from nemoguardrails.colang.v1_0.runtime.eval import eval_expression
 from nemoguardrails.colang.v1_0.runtime.sliding import slide
+from nemoguardrails.rails.llm.config import RailsConfig
 from nemoguardrails.utils import new_event_dict, new_uuid
 
 
@@ -92,7 +96,7 @@ class FlowState:
     status: FlowStatus = FlowStatus.ACTIVE
 
     # The UID of the flows that interrupted this one
-    interrupted_by = None
+    interrupted_by: Optional[str] = None
 
 
 @dataclass
@@ -260,10 +264,10 @@ def _call_subflow(new_state: State, flow_state: FlowState) -> Optional[FlowState
 
     # Basic support for referring a subflow using a variable
     if subflow_id.startswith("$"):
-        subflow_id = eval_expression(subflow_id, new_state.context)
+        subflow_id = str(eval_expression(subflow_id, new_state.context))
 
     # parameter support
-    if _flow_id_has_params(subflow_id):
+    if isinstance(subflow_id, str) and _flow_id_has_params(subflow_id):
         flow_params = _get_flow_params(subflow_id)
         subflow_id = _normalize_flow_id(subflow_id)
         new_state.context_updates.update(flow_params)
@@ -316,7 +320,9 @@ def _slide_with_subflows(state: State, flow_state: FlowState) -> Optional[int]:
     should_continue = True
     while should_continue:
         should_continue = False
-        flow_state.head = slide(state, flow_config, flow_state.head)
+        new_head = slide(state, flow_config, flow_state.head)
+        if new_head is not None:
+            flow_state.head = new_head
 
         # We check if we reached a point where we need to call a subflow
         if flow_state.head >= 0:
@@ -328,6 +334,8 @@ def _slide_with_subflows(state: State, flow_state: FlowState) -> Optional[int]:
             else:
                 # And if we don't have a next step yet, we set it to the next element
                 _record_next_step(state, flow_state, flow_config)
+
+    return None
 
 
 def compute_next_state(state: State, event: dict) -> State:
@@ -470,6 +478,8 @@ def compute_next_state(state: State, event: dict) -> State:
 
         # We try to slide first, just in case a flow starts with sliding logic
         start_head = slide(new_state, flow_config, 0)
+        if start_head is None:
+            start_head = 0
 
         # If the first element matches the current event,
         # or, if the flow is explicitly started by a `start_flow` event,
@@ -483,7 +493,7 @@ def compute_next_state(state: State, event: dict) -> State:
                 uid=flow_uid,
                 flow_id=flow_config.id,
                 # When we have a match, we skip the element that was matched and move the head to the next one
-                head=start_head + (1 if _is_start_match else 0),
+                head=int(start_head) + (1 if _is_start_match else 0),
             )
             if params := event.get("params"):
                 new_state.context_updates.update(params)
@@ -523,6 +533,7 @@ def compute_next_state(state: State, event: dict) -> State:
     # We are only interested when the extension flow actually decided, not just started.
     if (
         decision_flow_config
+        and decision_flow_state is not None
         and decision_flow_config.is_extension
         and decision_flow_state.head > 1
     ):
@@ -610,7 +621,7 @@ def _step_to_event(step: dict) -> dict:
 def compute_next_steps(
     history: List[dict],
     flow_configs: Dict[str, FlowConfig],
-    rails_config: "RailsConfig",
+    rails_config: RailsConfig,
     processing_log: List[dict],
 ) -> List[dict]:
     """Computes the next step in a flow-driven system given a history of events.
@@ -629,7 +640,7 @@ def compute_next_steps(
     )
 
     # First, we process the history and apply any alterations e.g. 'hide_prev_turn'
-    actual_history = []
+    actual_history: List[dict] = []
     for event in history:
         if event["type"] == "hide_prev_turn":
             # we look up the last `UtteranceUserActionFinished` event and remove everything after
@@ -709,14 +720,16 @@ def compute_context(history: List[dict]):
     Returns:
         dict: The computed context.
     """
-    context = {
+    context: Dict[str, Any] = {
         "last_user_message": None,
         "last_bot_message": None,
     }
 
     for event in history:
         if event["type"] == "ContextUpdate":
-            context.update(event["data"])
+            data = event.get("data")
+            if data is not None and isinstance(data, dict):
+                context.update(data)
 
         if event["type"] == "UserMessage":
             context["last_user_message"] = event["text"]
@@ -730,7 +743,7 @@ def compute_context(history: List[dict]):
     return context
 
 
-def _get_flow_params(flow_id: str) -> dict:
+def _get_flow_params(flow_id: str) -> Dict[str, Optional[str]]:
     """Return the arguments in a flow id as a dictionary.
 
     Args:
@@ -740,7 +753,7 @@ def _get_flow_params(flow_id: str) -> dict:
         A dictionary of arguments in the flow id.
     """
     flow_id = flow_id.strip()
-    params = {}
+    params: Dict[str, Optional[str]] = {}
 
     if "(" in flow_id and ")" in flow_id:
         arg_string = flow_id.split("(")[1].split(")")[0]

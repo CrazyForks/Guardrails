@@ -88,14 +88,17 @@ def initialize_state(state: State) -> None:
 
     state.flow_states = dict()
 
+    # TODO: Think about where to put this
+    current_flow_config: Optional[FlowConfig] = None
     try:
-        # TODO: Think about where to put this
         for flow_config in state.flow_configs.values():
+            current_flow_config = flow_config
             initialize_flow(state, flow_config)
     except Exception as e:
-        if e.args[0]:
+        if e.args[0] and current_flow_config is not None:
             raise ColangSyntaxError(
-                e.args[0] + f" in flow `{flow_config.id}` ({flow_config.source_file})"
+                e.args[0]
+                + f" in flow `{current_flow_config.id}` ({current_flow_config.source_file})"
             )
         else:
             raise ColangSyntaxError() from e
@@ -122,7 +125,8 @@ def initialize_flow(state: State, flow_config: FlowConfig) -> None:
     # Extract all the label elements
     for idx, element in enumerate(flow_config.elements):
         if isinstance(element, Label):
-            flow_config.element_labels.update({element["name"]: idx})
+            if hasattr(element, "name") and element.name:
+                flow_config.element_labels[element.name] = idx
 
 
 def create_flow_instance(
@@ -958,7 +962,12 @@ def _advance_head_front(state: State, heads: List[FlowHead]) -> List[FlowHead]:
             # In case there were any runtime error the flow will be aborted (fail)
             source_line = "unknown"
             element = flow_config.elements[head.position]
-            if hasattr(element, "_source") and element._source:
+            if (
+                not isinstance(element, dict)
+                and hasattr(element, "_source")
+                and element._source is not None
+                and hasattr(element._source, "line")
+            ):
                 source_line = str(element._source.line)
             log.warning(
                 "Flow '%s' failed on line %s (%s) due to Colang runtime exception: %s",
@@ -2200,9 +2209,19 @@ def get_event_name_from_element(
         ):
             if element_spec.members is None:
                 raise ColangValueError("Missing event attributes!")
-            event_name = member["name"]
-            event = obj.get_event(event_name, {})
-            return event.name
+            # Handle both dict and non-dict member types
+            if isinstance(member, dict) and "name" in member:
+                event_name = member["name"]
+            elif hasattr(member, "name"):
+                event_name = member.name
+            else:
+                # Fall back to string representation
+                event_name = str(member)
+            if event_name is not None:
+                event = obj.get_event(event_name, {})
+                return event.name
+            else:
+                raise ColangRuntimeError("Unable to determine event name")
         else:
             raise ColangRuntimeError(f"Unsupported type '{type(obj)}'")
 
@@ -2213,17 +2232,25 @@ def get_event_name_from_element(
             flow_config = state.flow_configs[element_spec.name]
             temp_flow_state = create_flow_instance(flow_config, "", "", {})
             flow_event_name = element_spec.members[0]["name"]
-            flow_event: InternalEvent = temp_flow_state.get_event(flow_event_name, {})
-            del flow_event.arguments["source_flow_instance_uid"]
-            del flow_event.arguments["flow_instance_uid"]
-            return flow_event.name
+            if flow_event_name is not None:
+                flow_event: InternalEvent = temp_flow_state.get_event(
+                    flow_event_name, {}
+                )
+                del flow_event.arguments["source_flow_instance_uid"]
+                del flow_event.arguments["flow_instance_uid"]
+                return flow_event.name
+            else:
+                raise ColangRuntimeError("Flow event name cannot be None")
         elif element_spec.spec_type == SpecType.ACTION:
             # Action object
             assert element_spec.name
             action = Action(element_spec.name, {}, flow_state.flow_id)
             event_name = element_spec.members[0]["name"]
-            action_event: ActionEvent = action.get_event(event_name, {})
-            return action_event.name
+            if event_name is not None:
+                action_event: ActionEvent = action.get_event(event_name, {})
+                return action_event.name
+            else:
+                raise ColangRuntimeError("Action event name cannot be None")
         else:
             raise ColangRuntimeError(f"Unsupported type '{element_spec.spec_type }'")
     else:
@@ -2280,10 +2307,16 @@ def get_event_from_element(
                 raise ColangValueError("Missing event attributes!")
             event_name = member["name"]
             event_arguments = member["arguments"]
-            event_arguments = _evaluate_arguments(
-                event_arguments, _get_eval_context(state, flow_state)
-            )
-            event = obj.get_event(event_name, event_arguments)
+            if event_arguments is not None:
+                event_arguments = _evaluate_arguments(
+                    event_arguments, _get_eval_context(state, flow_state)
+                )
+            else:
+                event_arguments = {}
+            if event_name is not None:
+                event = obj.get_event(event_name, event_arguments)
+            else:
+                raise ColangRuntimeError("Event name cannot be None")
 
             if isinstance(event, InternalEvent) and isinstance(obj, FlowState):
                 event.flow = obj
@@ -2303,14 +2336,21 @@ def get_event_from_element(
             flow_config = state.flow_configs[element_spec.name]
             temp_flow_state = create_flow_instance(flow_config, "", "", {})
             flow_event_name = element_spec.members[0]["name"]
-            flow_event_arguments = element_spec.arguments
-            flow_event_arguments.update(element_spec.members[0]["arguments"])
+            flow_event_arguments = (
+                element_spec.arguments if element_spec.arguments is not None else {}
+            )
+            member_arguments = element_spec.members[0]["arguments"]
+            if member_arguments is not None:
+                flow_event_arguments.update(member_arguments)
             flow_event_arguments = _evaluate_arguments(
                 flow_event_arguments, _get_eval_context(state, flow_state)
             )
-            flow_event: InternalEvent = temp_flow_state.get_event(
-                flow_event_name, flow_event_arguments
-            )
+            if flow_event_name is not None:
+                flow_event: InternalEvent = temp_flow_state.get_event(
+                    flow_event_name, flow_event_arguments
+                )
+            else:
+                raise ColangRuntimeError("Flow event name cannot be None")
             del flow_event.arguments["source_flow_instance_uid"]
             del flow_event.arguments["flow_instance_uid"]
             if element["op"] == "match":
@@ -2319,17 +2359,28 @@ def get_event_from_element(
             return flow_event
         elif element_spec.spec_type == SpecType.ACTION:
             # Action object
-            action_arguments = _evaluate_arguments(
-                element_spec.arguments, _get_eval_context(state, flow_state)
-            )
+            if element_spec.arguments is not None:
+                action_arguments = _evaluate_arguments(
+                    element_spec.arguments, _get_eval_context(state, flow_state)
+                )
+            else:
+                action_arguments = {}
             action = Action(element_spec.name, action_arguments, flow_state.flow_id)
             # TODO: refactor the following repetition of code (see above)
             event_name = element_spec.members[0]["name"]
             event_arguments = element_spec.members[0]["arguments"]
-            event_arguments = _evaluate_arguments(
-                event_arguments, _get_eval_context(state, flow_state)
-            )
-            action_event: ActionEvent = action.get_event(event_name, event_arguments)
+            if event_arguments is not None:
+                event_arguments = _evaluate_arguments(
+                    event_arguments, _get_eval_context(state, flow_state)
+                )
+            else:
+                event_arguments = {}
+            if event_name is not None:
+                action_event: ActionEvent = action.get_event(
+                    event_name, event_arguments
+                )
+            else:
+                raise ColangRuntimeError("Action event name cannot be None")
             if element["op"] == "match":
                 # Delete action_uid from event since the action is only a helper object
                 action_event.action_uid = None
@@ -2339,27 +2390,36 @@ def get_event_from_element(
         assert element_spec.name
         if element_spec.name.islower() or element_spec.name in InternalEvents.ALL:
             # Flow event
-            event_arguments = _evaluate_arguments(
-                element_spec.arguments, _get_eval_context(state, flow_state)
-            )
+            if element_spec.arguments is not None:
+                event_arguments = _evaluate_arguments(
+                    element_spec.arguments, _get_eval_context(state, flow_state)
+                )
+            else:
+                event_arguments = {}
             flow_event = InternalEvent(
                 name=element_spec.name, arguments=event_arguments
             )
             return flow_event
         elif "Action" in element_spec.name:
             # Action event
-            event_arguments = _evaluate_arguments(
-                element_spec.arguments, _get_eval_context(state, flow_state)
-            )
+            if element_spec.arguments is not None:
+                event_arguments = _evaluate_arguments(
+                    element_spec.arguments, _get_eval_context(state, flow_state)
+                )
+            else:
+                event_arguments = {}
             action_event = ActionEvent(
                 name=element_spec.name, arguments=event_arguments
             )
             return action_event
         else:
             # Event
-            event_arguments = _evaluate_arguments(
-                element_spec.arguments, _get_eval_context(state, flow_state)
-            )
+            if element_spec.arguments is not None:
+                event_arguments = _evaluate_arguments(
+                    element_spec.arguments, _get_eval_context(state, flow_state)
+                )
+            else:
+                event_arguments = {}
             new_event = Event(name=element_spec.name, arguments=event_arguments)
             return new_event
 

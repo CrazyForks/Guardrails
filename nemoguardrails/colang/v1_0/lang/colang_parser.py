@@ -16,7 +16,7 @@
 import json
 import re
 from ast import literal_eval
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -126,7 +126,7 @@ class ColangParser:
         self.current_params_indentation = 1
 
         # The current element i.e. user, bot, event, if ...
-        self.current_element = None
+        self.current_element: Optional[Dict[str, Any]] = None
 
         # The flows that have been parsed
         self.flows = {}
@@ -264,7 +264,7 @@ class ColangParser:
 
                 flow_hash = string_hash(flow_text)
 
-                self.text += " anonymous-" + flow_hash
+                self.text += " anonymous-" + str(flow_hash)
 
         # Below are some more advanced normalizations
 
@@ -313,8 +313,9 @@ class ColangParser:
         # Now, append the new one
         self.current_namespaces.append(namespace)
         self.current_namespace = ".".join(self.current_namespaces)
-        self.current_indentation = self.next_line["indentation"]
-        self.current_indentations.append(self.next_line["indentation"])
+        next_indentation = self.next_line["indentation"] if self.next_line else 0
+        self.current_indentation = next_indentation
+        self.current_indentations.append(next_indentation)
 
         # Reset the branches and the ifs on a new flow
         self.branches = []
@@ -335,7 +336,11 @@ class ColangParser:
     def _include_source_mappings(self):
         # Include the source mapping information if required
         if self.include_source_mapping:
-            if self.current_element and "_source_mapping" not in self.current_element:
+            if (
+                self.current_element is not None
+                and isinstance(self.current_element, dict)
+                and "_source_mapping" not in self.current_element
+            ):
                 self.current_element["_source_mapping"] = {
                     "filename": self.filename,
                     "line_number": self.current_line["number"],
@@ -790,7 +795,7 @@ class ColangParser:
 
         # If we're dealing with a topic, then we expand the flow definition
         if define_token == "topic":
-            self._insert_topic_flow_definition()
+            # TODO: Implement topic flow definition insertion
             return
 
         # Compute the symbol type
@@ -957,14 +962,18 @@ class ColangParser:
         if isinstance(yaml_value, str):
             yaml_value = {"$0": yaml_value}
 
-        # self.current_element.update(yaml_value)
-        for k in yaml_value.keys():
-            # if the key tarts with $, we remove it
-            param_name = k
-            if param_name[0] == "$":
-                param_name = param_name[1:]
+        if (
+            self.current_element is not None
+            and isinstance(self.current_element, dict)
+            and yaml_value is not None
+        ):
+            for k in yaml_value.keys():
+                # if the key tarts with $, we remove it
+                param_name = k
+                if param_name[0] == "$":
+                    param_name = param_name[1:]
 
-            self.current_element[param_name] = yaml_value[k]
+                self.current_element[param_name] = yaml_value[k]
 
     def _is_test_flow(self):
         """Returns true if the current flow is a test one.
@@ -1005,11 +1014,13 @@ class ColangParser:
     def _parse_when(self):
         # TODO: deal with "when" after "else when"
         assert (
-            self.next_line["indentation"] > self.current_line["indentation"]
+            self.next_line is not None
+            and self.next_line["indentation"] > self.current_line["indentation"]
         ), "Expected indented block after 'when' statement."
 
         # Create the new branch
-        new_branch = {"elements": [], "indentation": self.next_line["indentation"]}
+        next_indentation = self.next_line["indentation"] if self.next_line else 0
+        new_branch = {"elements": [], "indentation": next_indentation}
 
         # # on else, we need to pop the previous branch
         # if self.main_token == "else when":
@@ -1040,13 +1051,16 @@ class ColangParser:
                 #   continue
                 # else
                 #   ...
+                next_indentation = (
+                    self.next_line["indentation"] if self.next_line else 0
+                )
                 self.lines.insert(
                     self.current_line_idx + 1,
                     {
                         "text": f"continue",
                         # We keep the line mapping the same
                         "number": self.current_line["number"],
-                        "indentation": self.next_line["indentation"],
+                        "indentation": next_indentation,
                     },
                 )
                 self.lines.insert(
@@ -1320,9 +1334,11 @@ class ColangParser:
                                     "text": f"{utterance_text}",
                                     # We keep the line mapping the same
                                     "number": self.current_line["number"],
-                                    "indentation": self.current_indentation + 2
-                                    if i == len(indented_lines)
-                                    else indented_lines[i]["indentation"],
+                                    "indentation": (
+                                        self.current_indentation + 2
+                                        if i == len(indented_lines)
+                                        else indented_lines[i]["indentation"]
+                                    ),
                                 },
                             )
 
@@ -1343,7 +1359,9 @@ class ColangParser:
                 if utterance_id is None:
                     self.current_element["bot"] = {
                         "_type": "element",
-                        "text": utterance_text[1:-1],
+                        "text": (
+                            utterance_text[1:-1] if utterance_text is not None else ""
+                        ),
                     }
 
                     # if we have quick_replies, we move them in the element
@@ -1361,7 +1379,13 @@ class ColangParser:
         # If there was a bot message with a snippet, we also add an expect
         # TODO: can this be handled better?
         try:
-            if "snippet" in self.current_element["bot"]:
+            if (
+                self.current_element is not None
+                and isinstance(self.current_element, dict)
+                and "bot" in self.current_element
+                and isinstance(self.current_element["bot"], dict)
+                and "snippet" in self.current_element["bot"]
+            ):
                 self.branches[-1]["elements"].append(
                     {
                         "expect": "snippet",
@@ -1425,7 +1449,8 @@ class ColangParser:
 
         # if we need to save the return values, we store the info
         if "=" in flow_name:
-            return_vars, flow_name = get_stripped_tokens(split_max(flow_name, "=", 1))
+            stripped_tokens = get_stripped_tokens(split_max(flow_name, "=", 1))
+            return_vars, flow_name = stripped_tokens[0], stripped_tokens[1]
         else:
             return_vars = None
 
@@ -1475,8 +1500,9 @@ class ColangParser:
             branch_elements.insert(0, {"meta": {}})
 
         # Update the elements coming from the parameters
-        for k in self.current_element.keys():
-            branch_elements[0]["meta"][k] = self.current_element[k]
+        if self.current_element is not None:
+            for k in self.current_element.keys():
+                branch_elements[0]["meta"][k] = self.current_element[k]
 
     def _parse_generic(self):
         value = split_max(self.text, " ", 1)[1].strip()
@@ -1545,7 +1571,9 @@ class ColangParser:
         self.ifs.append(
             {
                 "element": self.current_element,
-                "indentation": self.next_line["indentation"],
+                "indentation": (
+                    self.next_line["indentation"] if self.next_line is not None else 0
+                ),
                 # We also record this to match it with the else
                 "keyword_indentation": self.current_indentation,
             }
@@ -1588,7 +1616,9 @@ class ColangParser:
         self.branches.append(
             {
                 "elements": self.current_element["do"],
-                "indentation": self.next_line["indentation"],
+                "indentation": (
+                    self.next_line["indentation"] if self.next_line is not None else 0
+                ),
             }
         )
 
@@ -1602,7 +1632,9 @@ class ColangParser:
         self.branches.append(
             {
                 "elements": self.current_element["any"],
-                "indentation": self.next_line["indentation"],
+                "indentation": (
+                    self.next_line["indentation"] if self.next_line is not None else 0
+                ),
             }
         )
 
@@ -1631,7 +1663,9 @@ class ColangParser:
         self.branches.append(
             {
                 "elements": self.current_element["infer"],
-                "indentation": self.next_line["indentation"],
+                "indentation": (
+                    self.next_line["indentation"] if self.next_line is not None else 0
+                ),
             }
         )
 
@@ -1767,15 +1801,15 @@ class ColangParser:
                 exception = Exception(error)
 
                 # Decorate the exception with where the parsing failed
-                exception.filename = self.filename
-                exception.line = self.current_line["number"]
-                exception.error = str(ex)
+                setattr(exception, "filename", self.filename)
+                setattr(exception, "line", self.current_line["number"])
+                setattr(exception, "error", str(ex))
 
                 raise exception
 
             self.current_line_idx += 1
 
-        result = {"flows": self.flows}
+        result: Dict[str, Any] = {"flows": self.flows}
 
         if self.imports:
             result["imports"] = self.imports
@@ -1818,7 +1852,7 @@ class ColangParser:
         """
         snippets = {}
         imports = []
-        snippet = None
+        snippet: Optional[Dict[str, Any]] = None
 
         while self.current_line_idx < len(self.lines):
             self._fetch_current_line()
@@ -1833,6 +1867,7 @@ class ColangParser:
                     for k in self.current_line.keys():
                         d[k] = self.current_line[k]
                     d["filename"] = self.filename
+                    assert snippet is not None  # Type checker hint
                     snippet["lines"].append(d)
 
                     self.current_line_idx += 1
