@@ -50,13 +50,20 @@ async def jailbreak_detection_heuristics(
     **kwargs,
 ) -> bool:
     """Checks the user's prompt to determine if it is attempt to jailbreak the model."""
+    if context is None:
+        return False
+
     jailbreak_config = llm_task_manager.config.rails.config.jailbreak_detection
+    if jailbreak_config is None:
+        return False
 
     jailbreak_api_url = jailbreak_config.server_endpoint
     lp_threshold = jailbreak_config.length_per_perplexity_threshold
     ps_ppl_threshold = jailbreak_config.prefix_suffix_perplexity_threshold
 
     prompt = context.get("user_message")
+    if prompt is None:
+        return False
 
     if not jailbreak_api_url:
         from nemoguardrails.library.jailbreak_detection.heuristics.checks import (
@@ -93,6 +100,8 @@ async def jailbreak_detection_model(
     """Uses a trained classifier to determine if a user input is a jailbreak attempt"""
     prompt: str = ""
     jailbreak_config = llm_task_manager.config.rails.config.jailbreak_detection
+    if jailbreak_config is None:
+        return False
 
     jailbreak_api_url = jailbreak_config.server_endpoint
     nim_base_url = jailbreak_config.nim_base_url
@@ -125,7 +134,8 @@ async def jailbreak_detection_model(
             )
             return False
 
-    if nim_base_url:
+    jailbreak = None
+    if nim_base_url and nim_classification_path:
         jailbreak = await jailbreak_nim_request(
             prompt=prompt,
             nim_url=nim_base_url,

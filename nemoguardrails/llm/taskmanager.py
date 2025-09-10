@@ -425,12 +425,15 @@ class LLMTaskManager:
             return task_messages
 
     def parse_task_output(
-        self, task: Task, output: str, forced_output_parser: Optional[str] = None
+        self,
+        task: Union[str, Task],
+        output: str,
+        forced_output_parser: Optional[str] = None,
     ) -> ParsedTaskOutput:
         """Parses the output of a task, optionally extracting reasoning traces.
 
         Args:
-            task (Task): The task for which the output is being parsed.
+            task (Union[str, Task]): The task for which the output is being parsed.
             output (str): The output string to be parsed.
             forced_output_parser (Optional[str]): An optional parser name to force
 
@@ -471,7 +474,7 @@ class LLMTaskManager:
 
         return ParsedTaskOutput(text=parsed_text, reasoning_trace=reasoning_trace)
 
-    def has_output_parser(self, task: Task):
+    def has_output_parser(self, task: Union[str, Task]):
         prompt = get_prompt(self.config, task)
         return prompt.output_parser is not None
 

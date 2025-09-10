@@ -50,6 +50,9 @@ async def self_check_facts(
     **kwargs,
 ):
     """Checks the facts for the bot response by appropriately prompting the base llm."""
+    if context is None:
+        return False
+
     _MAX_TOKENS = 3
     evidence = context.get("relevant_chunks", [])
     response = context.get("bot_message")
@@ -72,7 +75,14 @@ async def self_check_facts(
     # Initialize the LLMCallInfo object
     llm_call_info_var.set(LLMCallInfo(task=task.value))
 
-    with llm_params(llm, temperature=config.lowest_temperature, max_tokens=max_tokens):
+    if llm is None:
+        return False
+
+    with llm_params(
+        llm,
+        temperature=config.lowest_temperature if config else 0.1,
+        max_tokens=max_tokens,
+    ):
         response = await llm_call(llm, prompt, stop=stop)
 
     if llm_task_manager.has_output_parser(task):

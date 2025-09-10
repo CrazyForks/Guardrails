@@ -32,13 +32,16 @@ import logging
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, TypedDict, Union
 
-yara = None
-try:
+if TYPE_CHECKING:
     import yara
-except ImportError:
-    pass
+else:
+    yara = None
+    try:
+        import yara
+    except ImportError:
+        pass
 
 from nemoguardrails import RailsConfig
 from nemoguardrails.actions import action
@@ -115,7 +118,7 @@ def _validate_injection_config(config: RailsConfig) -> None:
 
 def _extract_injection_config(
     config: RailsConfig,
-) -> Tuple[str, Path, Tuple[str], Optional[Dict[str, str]]]:
+) -> Tuple[str, Path, Tuple[str, ...], Optional[Dict[str, str]]]:
     """
     Extracts and processes the injection detection configuration values.
 
@@ -130,6 +133,8 @@ def _extract_injection_config(
         ValueError: If the injection rules contain invalid elements.
     """
     command_injection_config = config.rails.config.injection_detection
+    if command_injection_config is None:
+        raise ValueError("Injection detection config is not configured")
     yara_rules = command_injection_config.yara_rules
 
     # Set yara_path
@@ -188,6 +193,9 @@ def _load_rules(
         )
         return None
 
+    if yara is None:
+        return None
+
     try:
         if yara_rules:
             rules_source = {
@@ -202,7 +210,7 @@ def _load_rules(
                 for rule_name in rule_names
             }
             rules = yara.compile(filepaths=rules_to_load)
-    except yara.SyntaxError as e:
+    except Exception as e:  # yara.SyntaxError when yara is available
         msg = f"Failed to initialize injection detection due to configuration or YARA rule error: YARA compilation failed: {e}"
         log.error(msg)
         return None

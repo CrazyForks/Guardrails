@@ -86,6 +86,10 @@ async def call_fiddler_guardrail(
 
 @action(name="call fiddler safety on user message", is_system_action=True)
 async def call_fiddler_safety_user(config: RailsConfig, context: Optional[dict] = None):
+    if context is None:
+        log.error("Context is required for Fiddler Jailbreak Guardrails")
+        return False
+
     fiddler_config: FiddlerGuardrails = getattr(config.rails.config, "fiddler")
     base_url = fiddler_config.fiddler_endpoint
 
@@ -114,6 +118,10 @@ async def call_fiddler_safety_user(config: RailsConfig, context: Optional[dict] 
 
 @action(name="call fiddler safety on bot message", is_system_action=True)
 async def call_fiddler_safety_bot(config: RailsConfig, context: Optional[dict] = None):
+    if context is None:
+        log.error("Context is required for Fiddler Safety Guardrails")
+        return False
+
     fiddler_config: FiddlerGuardrails = getattr(config.rails.config, "fiddler")
     base_url = fiddler_config.fiddler_endpoint
 
@@ -144,6 +152,10 @@ async def call_fiddler_safety_bot(config: RailsConfig, context: Optional[dict] =
 async def call_fiddler_faithfulness(
     config: RailsConfig, context: Optional[dict] = None
 ):
+    if context is None:
+        log.error("Context is required for Fiddler Faithfulness Guardrails")
+        return False
+
     fiddler_config: FiddlerGuardrails = getattr(config.rails.config, "fiddler")
     base_url = fiddler_config.fiddler_endpoint
 

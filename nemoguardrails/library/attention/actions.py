@@ -60,8 +60,10 @@ def _get_action_timestamp(action_event_name: str, event_args) -> Optional[dateti
         return None
     try:
         return read_isoformat(event_args[_mapping[action_event_name]])
-    except Exception:
-        log_p(f"Could not parse timestamp {event_args[_mapping[action_event_name]]}")
+    except (ValueError, KeyError, TypeError) as e:
+        log_p(
+            f"Could not parse timestamp {event_args[_mapping[action_event_name]]}: {e}"
+        )
         return None
 
 
@@ -98,8 +100,8 @@ class UserAttentionMaterializedView:
         self.user_is_talking = False
         self.sentence_distribution = {UNKNOWN_ATTENTION_STATE: 0.0}
         self.attention_events: list[ActionEvent] = []
-        self.utterance_started_event = None
-        self.utterance_last_event = None
+        self.utterance_started_event: Optional[ActionEvent] = None
+        self.utterance_last_event: Optional[ActionEvent] = None
 
     def reset_view(self) -> None:
         """Reset the view. Removing all attention events except for the most recent one"""
@@ -111,16 +113,17 @@ class UserAttentionMaterializedView:
 
         Args:
             event (ActionEvent): Action event to use for updating the view
-            offsets (dict[str, float]): You can provide static offsets in seconds for every event type to correct for known latencies of these events.
+            offsets (dict[str, float]): You can provide static offsets in seconds for every event type to
+                correct for known latencies of these events.
         """
         # print(f"attention_events: {self.attention_events}")
         timestamp = _get_action_timestamp(event.name, event.arguments)
         if not timestamp:
             return
 
-        event.corrected_datetime = timestamp + timedelta(
-            seconds=offsets.get(event.name, 0.0)
-        )
+        # Dynamically add corrected_datetime attribute to the event
+        corrected_time = timestamp + timedelta(seconds=offsets.get(event.name, 0.0))
+        setattr(event, "corrected_datetime", corrected_time)
 
         if event.name == "UtteranceUserActionStarted":
             self.reset_view()
@@ -144,7 +147,8 @@ class UserAttentionMaterializedView:
             attention_levels (list[str]): List of attention level names to consider `attentive`
 
         Returns:
-            float: The percentage the user was in the attention levels provided. Returns 1.0 if no attention events have been registered.
+            float: The percentage the user was in the attention levels provided. Returns 1.0 if no
+                attention events have been registered.
         """
         log_p(f"attention_events={self.attention_events}")
 
@@ -194,7 +198,8 @@ class UserAttentionMaterializedView:
         )
         durations = compute_time_spent_in_states(state_changes)
 
-        # If the only state we observed during the duration of the utterance is UNKNOWN_ATTENTION_STATE we treat it as 1.0
+        # If the only state we observed during the duration of the utterance is UNKNOWN_ATTENTION_STATE
+        # we treat it as 1.0
         if len(durations) == 1 and UNKNOWN_ATTENTION_STATE in durations:
             return 1.0
 
@@ -238,6 +243,7 @@ async def get_attention_percentage_action(attention_levels: list[str]) -> float:
         attention_levels : Name of attention levels for which the user is considered to be `attentive`
 
     Returns:
-        float: The percentage the user was in the attention levels provided. Returns 1.0 if no attention events have been registered.
+        float: The percentage the user was in the attention levels provided. Returns 1.0 if no
+            attention events have been registered.
     """
     return _attention_view.get_time_spent_percentage(attention_levels)

@@ -41,13 +41,13 @@ class YaraEnumMeta(EnumMeta):
             return True
 
     def __repr__(cls):
-        return ", ".join([member.value for member in list(cls)])
+        return ", ".join([str(member) for member in list(cls)])
 
     def __le__(cls, other):
         if isinstance(other, list):
             other = set(other)
         if isinstance(other, set):
-            values = {member.value for member in list(cls)}
+            values = {str(member) for member in list(cls)}
             return values <= other
         else:
             raise TypeError(
@@ -58,7 +58,7 @@ class YaraEnumMeta(EnumMeta):
         if isinstance(other, list):
             other = set(other)
         if isinstance(other, set):
-            values = {member.value for member in list(cls)}
+            values = {str(member) for member in list(cls)}
             return values >= other
         else:
             raise TypeError(

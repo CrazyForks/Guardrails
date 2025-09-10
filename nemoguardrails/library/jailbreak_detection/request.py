@@ -33,6 +33,7 @@ import logging
 from typing import Optional
 
 import aiohttp
+from aiohttp import ClientTimeout
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +116,10 @@ async def jailbreak_nim_request(
                 if nim_auth_token is not None:
                     headers["Authorization"] = f"Bearer {nim_auth_token}"
                 async with session.post(
-                    endpoint, json=payload, headers=headers, timeout=30
+                    endpoint,
+                    json=payload,
+                    headers=headers,
+                    timeout=ClientTimeout(total=30),
                 ) as resp:
                     if resp.status != 200:
                         log.error(

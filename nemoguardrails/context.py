@@ -14,7 +14,10 @@
 # limitations under the License.
 
 import contextvars
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from nemoguardrails.logging.explain import LLMCallInfo
 
 streaming_handler_var = contextvars.ContextVar("streaming_handler", default=None)
 
@@ -22,7 +25,9 @@ streaming_handler_var = contextvars.ContextVar("streaming_handler", default=None
 explain_info_var = contextvars.ContextVar("explain_info", default=None)
 
 # The current LLM call.
-llm_call_info_var = contextvars.ContextVar("llm_call_info", default=None)
+llm_call_info_var: contextvars.ContextVar[
+    Optional["LLMCallInfo"]
+] = contextvars.ContextVar("llm_call_info", default=None)
 
 # All the generation options applicable to the current context.
 generation_options_var = contextvars.ContextVar("generation_options", default=None)

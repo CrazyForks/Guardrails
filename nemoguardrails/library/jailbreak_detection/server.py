@@ -80,14 +80,14 @@ def hello_world():
 @app.post("/jailbreak_lp_heuristic")
 def lp_heuristic_check(request: JailbreakHeuristicRequest):
     return hc.check_jailbreak_length_per_perplexity(
-        request.prompt, request.lp_threshold
+        request.prompt, request.lp_threshold or 89.79
     )
 
 
 @app.post("/jailbreak_ps_heuristic")
 def ps_ppl_heuristic_check(request: JailbreakHeuristicRequest):
     return hc.check_jailbreak_prefix_suffix_perplexity(
-        request.prompt, request.ps_ppl_threshold
+        request.prompt, request.ps_ppl_threshold or 1845.65
     )
 
 
@@ -95,10 +95,10 @@ def ps_ppl_heuristic_check(request: JailbreakHeuristicRequest):
 def run_all_heuristics(request: JailbreakHeuristicRequest):
     # Will add other heuristics as they become available
     lp_check = hc.check_jailbreak_length_per_perplexity(
-        request.prompt, request.lp_threshold
+        request.prompt, request.lp_threshold or 89.79
     )
     ps_ppl_check = hc.check_jailbreak_prefix_suffix_perplexity(
-        request.prompt, request.ps_ppl_threshold
+        request.prompt, request.ps_ppl_threshold or 1845.65
     )
     jailbreak = any([lp_check["jailbreak"], ps_ppl_check["jailbreak"]])
     heuristic_checks = {

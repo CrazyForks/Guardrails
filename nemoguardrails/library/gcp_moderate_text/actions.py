@@ -17,10 +17,10 @@ import logging
 from typing import Optional
 
 try:
-    from google.cloud import language_v2
+    from google.cloud import language_v2  # type: ignore
 except ImportError:
     # The exception about installing google-cloud-language will be on the first call to the moderation api
-    pass
+    language_v2 = None
 
 
 from nemoguardrails.actions import action
@@ -115,8 +115,11 @@ async def call_gcp_text_moderation_api(
 
     For more information check https://cloud.google.com/docs/authentication/application-default-credentials
     """
+    if context is None:
+        raise ValueError("Context is required")
+
     try:
-        from google.cloud import language_v2
+        from google.cloud import language_v2  # type: ignore
 
     except ImportError:
         raise ImportError(

@@ -16,7 +16,15 @@
 import logging
 from typing import Optional
 
-from langchain.chains import LLMChain
+try:
+    from langchain.chains import LLMChain  # type: ignore
+except ImportError:
+    try:
+        from langchain_core.chains import LLMChain  # type: ignore
+    except ImportError:
+        # Fallback if LLMChain is not available
+        LLMChain = None
+
 from langchain.prompts import PromptTemplate
 from langchain_core.language_models.llms import BaseLLM
 
@@ -52,8 +60,11 @@ async def self_check_hallucination(
 
     :return: True if hallucination is detected, False otherwise.
     """
+    if context is None:
+        raise ValueError("Context is required")
+
     try:
-        from langchain_openai import OpenAI
+        from langchain_openai import OpenAI  # type: ignore
     except ImportError:
         log.warning(
             "The langchain_openai module is not installed. Please install it using pip: pip install langchain_openai"
@@ -81,6 +92,12 @@ async def self_check_hallucination(
                 return False
 
         # Use the "generate" call from langchain to get all completions in the same response.
+        if LLMChain is None:
+            log.warning(
+                "LLMChain is not available. Cannot perform hallucination check."
+            )
+            return False
+
         last_bot_prompt = PromptTemplate(template="{text}", input_variables=["text"])
         chain = LLMChain(prompt=last_bot_prompt, llm=llm)
 
@@ -131,7 +148,9 @@ async def self_check_hallucination(
             llm_call_info_var.set(LLMCallInfo(task=Task.SELF_CHECK_HALLUCINATION.value))
             stop = llm_task_manager.get_stop_tokens(task=Task.SELF_CHECK_HALLUCINATION)
 
-            with llm_params(llm, temperature=config.lowest_temperature):
+            with llm_params(
+                llm, temperature=config.lowest_temperature if config else 0.1
+            ):
                 agreement = await llm_call(llm, prompt, stop=stop)
 
             agreement = agreement.lower().strip()

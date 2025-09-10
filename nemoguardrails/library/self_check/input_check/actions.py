@@ -48,6 +48,9 @@ async def self_check_input(
         True if the input should be allowed, False otherwise.
     """
 
+    if context is None:
+        return False
+
     _MAX_TOKENS = 3
     user_input = context.get("user_message")
     task = Task.SELF_CHECK_INPUT
@@ -66,8 +69,13 @@ async def self_check_input(
         # Initialize the LLMCallInfo object
         llm_call_info_var.set(LLMCallInfo(task=task.value))
 
+        if llm is None:
+            return False
+
         with llm_params(
-            llm, temperature=config.lowest_temperature, max_tokens=max_tokens
+            llm,
+            temperature=config.lowest_temperature if config else 0.1,
+            max_tokens=max_tokens,
         ):
             response = await llm_call(llm, prompt, stop=stop)
 

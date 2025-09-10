@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import logging
 import os
 from typing import Dict, Optional, Union
@@ -38,13 +37,16 @@ async def call_cleanlab_api(
     context: Optional[dict] = None,
     **kwargs,
 ) -> Union[ValueError, ImportError, Dict]:
+    if context is None:
+        raise ValueError("Context is required")
+
     api_key = os.environ.get("CLEANLAB_API_KEY")
 
     if api_key is None:
         raise ValueError("CLEANLAB_API_KEY environment variable not set.")
 
     try:
-        from cleanlab_studio import Studio
+        from cleanlab_studio import Studio  # type: ignore
     except ImportError:
         raise ImportError(
             "Please install cleanlab-studio using 'pip install --upgrade cleanlab-studio' command"
