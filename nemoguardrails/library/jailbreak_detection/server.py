@@ -37,6 +37,7 @@ import typer
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
+from pydantic.fields import Field
 
 app = FastAPI()
 cli_app = typer.Typer()
@@ -52,8 +53,12 @@ class JailbreakHeuristicRequest(BaseModel):
     """
 
     prompt: str
-    lp_threshold: Optional[float] = 89.79
-    ps_ppl_threshold: Optional[float] = 1845.65
+    lp_threshold: float = Field(
+        default=89.79, description="The length/perplexity threshold."
+    )
+    ps_ppl_threshold: float = Field(
+        default=1845.65, description="The prefix/suffix perplexity threshold."
+    )
 
 
 class JailbreakModelRequest(BaseModel):
@@ -95,10 +100,10 @@ def ps_ppl_heuristic_check(request: JailbreakHeuristicRequest):
 def run_all_heuristics(request: JailbreakHeuristicRequest):
     # Will add other heuristics as they become available
     lp_check = hc.check_jailbreak_length_per_perplexity(
-        request.prompt, request.lp_threshold or 89.79
+        request.prompt, request.lp_threshold
     )
     ps_ppl_check = hc.check_jailbreak_prefix_suffix_perplexity(
-        request.prompt, request.ps_ppl_threshold or 1845.65
+        request.prompt, request.ps_ppl_threshold
     )
     jailbreak = any([lp_check["jailbreak"], ps_ppl_check["jailbreak"]])
     heuristic_checks = {

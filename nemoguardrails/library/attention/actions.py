@@ -60,10 +60,8 @@ def _get_action_timestamp(action_event_name: str, event_args) -> Optional[dateti
         return None
     try:
         return read_isoformat(event_args[_mapping[action_event_name]])
-    except (ValueError, KeyError, TypeError) as e:
-        log_p(
-            f"Could not parse timestamp {event_args[_mapping[action_event_name]]}: {e}"
-        )
+    except Exception:
+        log_p(f"Could not parse timestamp {event_args[_mapping[action_event_name]]}")
         return None
 
 
@@ -121,7 +119,8 @@ class UserAttentionMaterializedView:
         if not timestamp:
             return
 
-        # Dynamically add corrected_datetime attribute to the event
+        # Neither ActionEvent nor base class Event have `corrected_time` attribute
+        # so add it dynamically
         corrected_time = timestamp + timedelta(seconds=offsets.get(event.name, 0.0))
         setattr(event, "corrected_datetime", corrected_time)
 
