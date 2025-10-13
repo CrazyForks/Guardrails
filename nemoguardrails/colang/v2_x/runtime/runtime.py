@@ -294,10 +294,10 @@ class RuntimeV2_x(Runtime):
 
     async def _get_action_resp(
         self, action_meta: Dict[str, Any], action_name: str, kwargs: Dict[str, Any]
-    ) -> Tuple[Union[str, Dict[str, Any]], str]:
+    ) -> Tuple[Union[Optional[str], Dict[str, Any]], str]:
         """Interact with actions and get response from action-server and system actions."""
         # default response
-        result: Union[str, Dict[str, Any]] = {}
+        result: Union[Optional[str], Dict[str, Any]] = {}
         status: str = "failed"
         try:
             # Call the Actions Server if it is available.
@@ -309,6 +309,7 @@ class RuntimeV2_x(Runtime):
                 result, status = await self.action_dispatcher.execute_action(
                     action_name, kwargs
                 )
+
             else:
                 url = urljoin(
                     self.config.actions_server_url, "/v1/actions/run"

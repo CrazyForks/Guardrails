@@ -457,16 +457,18 @@ class RuntimeV1_0(Runtime):
         self, flows: List[str], events: List[dict]
     ) -> ActionResult:
         """Run the input rails in parallel."""
+
         pre_events = [
-            (await create_event({"_type": "StartInputRail", "flow_id": flow})).events[0]
+            (await create_event({"_type": "StartInputRail", "flow_id": flow})).events
             for flow in flows
         ]
+        pre_events = [event[0] for event in pre_events if event]
+
         post_events = [
-            (
-                await create_event({"_type": "InputRailFinished", "flow_id": flow})
-            ).events[0]
+            (await create_event({"_type": "InputRailFinished", "flow_id": flow})).events
             for flow in flows
         ]
+        post_events = [event[0] for event in post_events if event]
 
         return await self._run_flows_in_parallel(
             flows=flows, events=events, pre_events=pre_events, post_events=post_events
@@ -476,18 +478,20 @@ class RuntimeV1_0(Runtime):
         self, flows: List[str], events: List[dict]
     ) -> ActionResult:
         """Run the output rails in parallel."""
+
         pre_events = [
-            (await create_event({"_type": "StartOutputRail", "flow_id": flow})).events[
-                0
-            ]
+            (await create_event({"_type": "StartOutputRail", "flow_id": flow})).events
             for flow in flows
         ]
+        pre_events = [event[0] for event in pre_events if event]
+
         post_events = [
             (
                 await create_event({"_type": "OutputRailFinished", "flow_id": flow})
-            ).events[0]
+            ).events
             for flow in flows
         ]
+        post_events = [event[0] for event in post_events if event]
 
         return await self._run_flows_in_parallel(
             flows=flows, events=events, pre_events=pre_events, post_events=post_events
