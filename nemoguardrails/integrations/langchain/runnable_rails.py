@@ -15,14 +15,12 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union, cast
 import logging
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union, cast
 
-from langchain_core.language_models import BaseChatModel
+from langchain_core.language_models import BaseChatModel, BaseLanguageModel
 from langchain_core.language_models.llms import BaseLLM
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompt_values import ChatPromptValue, StringPromptValue
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.runnables.utils import Input, Output, gather_with_concurrency
