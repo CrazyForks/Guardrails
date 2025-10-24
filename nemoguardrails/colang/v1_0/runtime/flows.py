@@ -15,7 +15,8 @@
 
 """A simplified modeling of the CoFlows engine."""
 
-import uuid
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
 from time import time
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
 
 from nemoguardrails.colang.v1_0.runtime.eval import eval_expression
 from nemoguardrails.colang.v1_0.runtime.sliding import slide
-from nemoguardrails.rails.llm.config import RailsConfig
 from nemoguardrails.utils import new_event_dict, new_uuid
 
 
