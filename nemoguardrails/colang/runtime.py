@@ -32,33 +32,34 @@ class Runtime:
         self.verbose = verbose
 
         # Register the actions with the dispatcher.
+        paths = config.imported_paths
+        import_paths = list(paths.values()) if paths else None
         self.action_dispatcher = ActionDispatcher(
             config_path=config.config_path,
-            import_paths=list(
-                config.imported_paths.values() if config.imported_paths else []
-            ),
+            import_paths=import_paths,
         )
 
         if hasattr(self, "_run_output_rails_in_parallel_streaming"):
             self.action_dispatcher.register_action(
-                getattr(self, "_run_output_rails_in_parallel_streaming"),
+                self._run_output_rails_in_parallel_streaming,  # type: ignore[attr-defined]
                 name="run_output_rails_in_parallel_streaming",
             )
 
         if hasattr(self, "_run_flows_in_parallel"):
             self.action_dispatcher.register_action(
-                getattr(self, "_run_flows_in_parallel"), name="run_flows_in_parallel"
+                self._run_flows_in_parallel,  # type: ignore[attr-defined]
+                name="run_flows_in_parallel",
             )
 
         if hasattr(self, "_run_input_rails_in_parallel"):
             self.action_dispatcher.register_action(
-                getattr(self, "_run_input_rails_in_parallel"),
+                self._run_input_rails_in_parallel,  # type: ignore[attr-defined]
                 name="run_input_rails_in_parallel",
             )
 
         if hasattr(self, "_run_output_rails_in_parallel"):
             self.action_dispatcher.register_action(
-                getattr(self, "_run_output_rails_in_parallel"),
+                self._run_output_rails_in_parallel,  # type: ignore[attr-defined]
                 name="run_output_rails_in_parallel",
             )
 
