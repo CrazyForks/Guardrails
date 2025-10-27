@@ -15,12 +15,12 @@
 
 from typing import Any, List, Optional
 
-from langchain.callbacks.manager import (
+from langchain_community.llms import HuggingFacePipeline
+from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForLLMRun,
     CallbackManagerForLLMRun,
 )
-from langchain.schema.output import GenerationChunk
-from langchain_community.llms import HuggingFacePipeline
+from langchain_core.outputs import GenerationChunk
 
 
 class HuggingFacePipelineCompatible(HuggingFacePipeline):
