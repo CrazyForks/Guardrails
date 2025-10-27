@@ -37,8 +37,7 @@ from typing import (
     cast,
 )
 
-from langchain_core.language_models import BaseChatModel
-from langchain_core.language_models.llms import BaseLLM
+from langchain_core.language_models import BaseChatModel, BaseLLM
 from typing_extensions import Self
 
 from nemoguardrails.actions.llm.generation import LLMGenerationActions
