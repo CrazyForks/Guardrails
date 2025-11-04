@@ -238,21 +238,50 @@ def _convert_messages_to_langchain_format(prompt: List[dict]) -> List:
 
 
 def _store_reasoning_traces(response) -> None:
+    reasoning_content = _extract_reasoning_from_content_blocks(response)
+    if not reasoning_content:
+        reasoning_content = _extract_reasoning_from_additional_kwargs(response)
+
+    if reasoning_content:
+        reasoning_trace_var.set(reasoning_content)
+
+
+def _extract_reasoning_from_content_blocks(response) -> str | None:
+    if hasattr(response, "content_blocks"):
+        for block in response.content_blocks:
+            if block.get("type") == "reasoning":
+                return block["reasoning"]
+    return None
+
+
+def _extract_reasoning_from_additional_kwargs(response) -> str | None:
     if hasattr(response, "additional_kwargs"):
         additional_kwargs = response.additional_kwargs
-        if (
-            isinstance(additional_kwargs, dict)
-            and "reasoning_content" in additional_kwargs
-        ):
-            reasoning_content = additional_kwargs["reasoning_content"]
-            if reasoning_content:
-                reasoning_trace_var.set(reasoning_content)
+        if isinstance(additional_kwargs, dict):
+            return additional_kwargs.get("reasoning_content")
+    return None
 
 
 def _store_tool_calls(response) -> None:
     """Extract and store tool calls from response in context."""
-    tool_calls = getattr(response, "tool_calls", None)
+    tool_calls = _extract_tool_calls_from_content_blocks(response)
+    if not tool_calls:
+        tool_calls = _extract_tool_calls_from_attribute(response)
     tool_calls_var.set(tool_calls)
+
+
+def _extract_tool_calls_from_content_blocks(response) -> List | None:
+    if hasattr(response, "content_blocks"):
+        tool_calls = []
+        for block in response.content_blocks:
+            if block.get("type") == "tool_call":
+                tool_calls.append(block)
+        return tool_calls if tool_calls else None
+    return None
+
+
+def _extract_tool_calls_from_attribute(response) -> List | None:
+    return getattr(response, "tool_calls", None)
 
 
 def _store_response_metadata(response) -> None:
