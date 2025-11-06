@@ -249,7 +249,7 @@ def _store_reasoning_traces(response) -> None:
 def _extract_reasoning_from_content_blocks(response) -> str | None:
     if hasattr(response, "content_blocks"):
         for block in response.content_blocks:
-            if block.get("type") == "reasoning":
+            if block.get("type") == "reasoning" and "reasoning" in block:
                 return block["reasoning"]
     return None
 
