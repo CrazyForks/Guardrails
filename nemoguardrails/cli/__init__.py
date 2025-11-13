@@ -25,6 +25,7 @@ from fastapi import FastAPI
 
 from nemoguardrails import __version__
 from nemoguardrails.actions_server import actions_server
+from nemoguardrails.benchmark.aiperf.run_aiperf import app as aiperf_app
 from nemoguardrails.cli.chat import run_chat
 from nemoguardrails.cli.migration import migrate
 from nemoguardrails.cli.providers import _list_providers, select_provider_with_type
@@ -45,6 +46,9 @@ app = typer.Typer()
 
 app.add_typer(
     eval_cli.app, name="eval", short_help="Evaluation a guardrail configuration."
+)
+app.add_typer(
+    aiperf_app, name="aiperf", short_help="Run, analyze, and compare AIPerf benchmarks"
 )
 app.pretty_exceptions_enable = False
 
